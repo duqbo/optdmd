@@ -24,6 +24,8 @@ the issues tab on GitHub.
 
 ## Citing this software
 
+To cite this software, follow the Zenodo link here:
+[![DOI](https://zenodo.org/badge/86738651.svg)](https://zenodo.org/badge/latestdoi/86738651)
 
 
 ## License 
