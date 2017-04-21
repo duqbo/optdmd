@@ -1,7 +1,6 @@
 
 function A = varpro2dexpfun(alpha,t,i)
-%
-% Derivatives of the matrix of exponentials
+%VARPRO2DEXPFUN Form derivatives of the matrix of exponentials
 %
 % Input 
 % 
@@ -15,6 +14,8 @@ function A = varpro2dexpfun(alpha,t,i)
 % then A = d/d(alpha_i) Phi in sparse
 % format
 %
+% See also VARPRO2EXPFUN
+
 m = length(t);
 n = length(alpha);
 

@@ -1,8 +1,6 @@
-function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia, ...
-    alpha_init,opts)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Variable projection algorithm for multivariate data
+function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
+    m,n,is,ia,alpha_init,opts)
+%VARPRO2 Variable projection algorithm for multivariate data
 %
 % Attempts a fit of the columns of y as linear combinations
 % of the columns of phi(alpha,t), i.e.
@@ -49,7 +47,15 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia, ...
 %            imode = 4, failed to find new search direction
 %                       at step niter
 %
-% Author: Travis Askham, 2017
+% Example:
+%
+%   >> [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
+%    m,n,is,ia,alpha_init,opts)
+%
+% See also VARPRO_OPTS
+
+%
+% Copyright (c) 2017 Travis Askham
 %
 % Available under the MIT license
 %
@@ -62,7 +68,7 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia, ...
 % Computational Optimization and Applications 54.3 (2013): 579-593. 
 % by Dianne P. O’Leary and Bert W. Rust. 
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 % various error and warning string formats
 
@@ -282,12 +288,8 @@ warning(mode1str,maxiter,errlast);
 end
 
 function out = varpro2_getfield(opts,opts_default,in)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Get value of field from struct if it exists,
+%VARPRO2_GETFIELD Get value of field from struct if it exists,
 % otherwise set to default value
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 optstr2 = 'opts struct is missing %s field, using default';
 optstr3 = 'opts default struct is missing %s field! bomb';
@@ -306,9 +308,7 @@ end
 end
 
 function x = varpro2_solve_special(R,D,b)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Solves a system of the form 
+% VARPRO2_SOLVE_SPECIAL Solves a system of the form 
 % 
 %     [ R ] 
 %     [---] x = b   
@@ -326,7 +326,6 @@ function x = varpro2_solve_special(R,D,b)
 % Fill-in is reduced for such a system. This
 % routine does not pivot
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 A = [R; D];
 [m,n] = size(R);

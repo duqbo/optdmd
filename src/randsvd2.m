@@ -1,4 +1,5 @@
 function [U,S,V] = randsvd2(A,p,q)
+%RANDSVD2 Compute the SVD using random projections
 %
 % An implementation of the random SVD
 % algorithms 4.4.1 and 4.4 of
@@ -14,7 +15,18 @@ function [U,S,V] = randsvd2(A,p,q)
 %     singular values of A. We recommend
 %     taking q >= 2)
 %
-% Copyright Travis Askham 2017
+% Output:
+%
+% [U,S,V] - reduced (rank p) singular value decomposition of A
+%
+% Example:
+%
+%   >> [U,S,V] = randsvd2(A,10,3)
+%
+% See also SVD
+
+%
+% Copyright 2017 Travis Askham
 %
 % MIT License
 %

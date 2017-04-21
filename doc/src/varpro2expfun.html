@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of varpro2expfun</title>
+  <meta name="keywords" content="varpro2expfun">
+  <meta name="description" content="VARPRO2EXPFUN Form matrix of exponentials">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>varpro2expfun
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>VARPRO2EXPFUN Form matrix of exponentials</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function A = varpro2expfun(alpha,t) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">VARPRO2EXPFUN Form matrix of exponentials
+
+ Input 
+ 
+ alpha - vector of exponent values
+ t - vector of times
+
+ Output
+
+ A(i,j) = exp(alpha_j t_i)
+
+ See also <a href="varpro2dexpfun.html" class="code" title="function A = varpro2dexpfun(alpha,t,i)">VARPRO2DEXPFUN</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="optdmd.html" class="code" title="function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)">optdmd</a>	OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 
+0002 <a name="_sub0" href="#_subfunctions" class="code">function A = varpro2expfun(alpha,t)</a>
+0003 <span class="comment">%VARPRO2EXPFUN Form matrix of exponentials</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Input</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% alpha - vector of exponent values</span>
+0008 <span class="comment">% t - vector of times</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Output</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% A(i,j) = exp(alpha_j t_i)</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% See also VARPRO2DEXPFUN</span>
+0015 
+0016 m = length(t);
+0017 n = length(alpha);
+0018 
+0019 A = zeros(m,n);
+0020 
+0021 ttemp = reshape(t,m,1);
+0022 atemp = reshape(alpha,n,1);
+0023 
+0024 temp = ttemp*transpose(atemp);
+0025 
+0026 A = exp(temp);
+0027 
+0028 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

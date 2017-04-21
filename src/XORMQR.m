@@ -1,14 +1,17 @@
 
 function varargout = XORMQR(SIDE,TRANS,A,tau,B,varargin)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%XORMQR  A wrapper for multiplying by Householder reflectors
 %
-% A wrapper for calling lapack routines 
-% for multiplying by Householder reflectors,
-% as computed by XGEQP3
+% Calls lapack routines to multiply B by Householder reflectors.
 %
-% We utilize the lapack.m file 
+% Reflectors are stored in A, tau, as output by XGEQP3 (for example)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Examples: 
+%
+%   >> QstarB = XORMQR('L','T',AOUT,TAU,B)
+%
+% See also QGEQP3, LAPACK
+%
 
 [m,n] = size(A);
 [mb,nb] = size(B);

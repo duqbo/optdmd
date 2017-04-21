@@ -1,0 +1,259 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of munkres</title>
+  <meta name="keywords" content="munkres">
+  <meta name="description" content="MUNKRES   Munkres (Hungarian) Algorithm for Linear Assignment Problem.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>munkres
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>MUNKRES   Munkres (Hungarian) Algorithm for Linear Assignment Problem.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [assignment,cost] = munkres(costMat) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> MUNKRES   Munkres (Hungarian) Algorithm for Linear Assignment Problem. 
+
+ [ASSIGN,COST] = munkres(COSTMAT) returns the optimal column indices,
+ ASSIGN assigned to each row and the minimum COST based on the assignment
+ problem represented by the COSTMAT, where the (i,j)th element represents the cost to assign the jth
+ job to the ith worker.
+
+ Partial assignment: This code can identify a partial assignment is a full
+ assignment is not feasible. For a partial assignment, there are some
+ zero elements in the returning assignment vector, which indicate
+ un-assigned tasks. The cost returned only contains the cost of partially
+ assigned tasks.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="munkres.html" class="code" title="function [assignment,cost] = munkres(costMat)">munkres</a>	MUNKRES   Munkres (Hungarian) Algorithm for Linear Assignment Problem.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="match_vectors.html" class="code" title="function indices = match_vectors(v1,v2)">match_vectors</a>	MATCH_VECTORS Wrapper for MUNKRES</li><li><a href="munkres.html" class="code" title="function [assignment,cost] = munkres(costMat)">munkres</a>	MUNKRES   Munkres (Hungarian) Algorithm for Linear Assignment Problem.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [minval,rIdx,cIdx]=outerplus(M,x,y)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [assignment,cost] = munkres(costMat)</a>
+0002 <span class="comment">% MUNKRES   Munkres (Hungarian) Algorithm for Linear Assignment Problem.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% [ASSIGN,COST] = munkres(COSTMAT) returns the optimal column indices,</span>
+0005 <span class="comment">% ASSIGN assigned to each row and the minimum COST based on the assignment</span>
+0006 <span class="comment">% problem represented by the COSTMAT, where the (i,j)th element represents the cost to assign the jth</span>
+0007 <span class="comment">% job to the ith worker.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% Partial assignment: This code can identify a partial assignment is a full</span>
+0010 <span class="comment">% assignment is not feasible. For a partial assignment, there are some</span>
+0011 <span class="comment">% zero elements in the returning assignment vector, which indicate</span>
+0012 <span class="comment">% un-assigned tasks. The cost returned only contains the cost of partially</span>
+0013 <span class="comment">% assigned tasks.</span>
+0014 
+0015 <span class="comment">% This is vectorized implementation of the algorithm. It is the fastest</span>
+0016 <span class="comment">% among all Matlab implementations of the algorithm.</span>
+0017 
+0018 <span class="comment">% Examples</span>
+0019 <span class="comment">% Example 1: a 5 x 5 example</span>
+0020 <span class="comment">%{</span>
+0021 [assignment,cost] = <a href="munkres.html" class="code" title="function [assignment,cost] = munkres(costMat)">munkres</a>(magic(5));
+0022 disp(assignment); <span class="comment">% 3 2 1 5 4</span>
+0023 disp(cost); <span class="comment">%15</span>
+0024 <span class="comment">%}</span>
+0025 <span class="comment">% Example 2: 400 x 400 random data</span>
+0026 <span class="comment">%{</span>
+0027 n=400;
+0028 A=rand(n);
+0029 tic
+0030 [a,b]=<a href="munkres.html" class="code" title="function [assignment,cost] = munkres(costMat)">munkres</a>(A);
+0031 toc                 <span class="comment">% about 2 seconds</span>
+0032 <span class="comment">%}</span>
+0033 <span class="comment">% Example 3: rectangular assignment with inf costs</span>
+0034 <span class="comment">%{</span>
+0035 A=rand(10,7);
+0036 A(A&gt;0.7)=Inf;
+0037 [a,b]=<a href="munkres.html" class="code" title="function [assignment,cost] = munkres(costMat)">munkres</a>(A);
+0038 <span class="comment">%}</span>
+0039 <span class="comment">% Example 4: an example of partial assignment</span>
+0040 <span class="comment">%{</span>
+0041 A = [1 3 Inf; Inf Inf 5; Inf Inf 0.5]; 
+0042 [a,b]=<a href="munkres.html" class="code" title="function [assignment,cost] = munkres(costMat)">munkres</a>(A)
+0043 <span class="comment">%}</span>
+0044 <span class="comment">% a = [1 0 3]</span>
+0045 <span class="comment">% b = 1.5</span>
+0046 <span class="comment">% Reference:</span>
+0047 <span class="comment">% &quot;Munkres' Assignment Algorithm, Modified for Rectangular Matrices&quot;,</span>
+0048 <span class="comment">% http://csclab.murraystate.edu/bob.pilgrim/445/munkres.html</span>
+0049 
+0050 <span class="comment">% version 2.3 by Yi Cao at Cranfield University on 11th September 2011</span>
+0051 
+0052 assignment = zeros(1,size(costMat,1));
+0053 cost = 0;
+0054 
+0055 validMat = costMat == costMat &amp; costMat &lt; Inf;
+0056 bigM = 10^(ceil(log10(sum(costMat(validMat))))+1);
+0057 costMat(~validMat) = bigM;
+0058 
+0059 <span class="comment">% costMat(costMat~=costMat)=Inf;</span>
+0060 <span class="comment">% validMat = costMat&lt;Inf;</span>
+0061 validCol = any(validMat,1);
+0062 validRow = any(validMat,2);
+0063 
+0064 nRows = sum(validRow);
+0065 nCols = sum(validCol);
+0066 n = max(nRows,nCols);
+0067 <span class="keyword">if</span> ~n
+0068     <span class="keyword">return</span>
+0069 <span class="keyword">end</span>
+0070 
+0071 maxv=10*max(costMat(validMat));
+0072 
+0073 dMat = zeros(n) + maxv;
+0074 dMat(1:nRows,1:nCols) = costMat(validRow,validCol);
+0075 
+0076 <span class="comment">%*************************************************</span>
+0077 <span class="comment">% Munkres' Assignment Algorithm starts here</span>
+0078 <span class="comment">%*************************************************</span>
+0079 
+0080 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0081 <span class="comment">%   STEP 1: Subtract the row minimum from each row.</span>
+0082 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0083 minR = min(dMat,[],2);
+0084 minC = min(bsxfun(@minus, dMat, minR));
+0085 
+0086 <span class="comment">%**************************************************************************</span>
+0087 <span class="comment">%   STEP 2: Find a zero of dMat. If there are no starred zeros in its</span>
+0088 <span class="comment">%           column or row start the zero. Repeat for each zero</span>
+0089 <span class="comment">%**************************************************************************</span>
+0090 zP = dMat == bsxfun(@plus, minC, minR);
+0091 
+0092 starZ = zeros(n,1);
+0093 <span class="keyword">while</span> any(zP(:))
+0094     [r,c]=find(zP,1);
+0095     starZ(r)=c;
+0096     zP(r,:)=false;
+0097     zP(:,c)=false;
+0098 <span class="keyword">end</span>
+0099 
+0100 <span class="keyword">while</span> 1
+0101 <span class="comment">%**************************************************************************</span>
+0102 <span class="comment">%   STEP 3: Cover each column with a starred zero. If all the columns are</span>
+0103 <span class="comment">%           covered then the matching is maximum</span>
+0104 <span class="comment">%**************************************************************************</span>
+0105     <span class="keyword">if</span> all(starZ&gt;0)
+0106         <span class="keyword">break</span>
+0107     <span class="keyword">end</span>
+0108     coverColumn = false(1,n);
+0109     coverColumn(starZ(starZ&gt;0))=true;
+0110     coverRow = false(n,1);
+0111     primeZ = zeros(n,1);
+0112     [rIdx, cIdx] = find(dMat(~coverRow,~coverColumn)==bsxfun(@plus,minR(~coverRow),minC(~coverColumn)));
+0113     <span class="keyword">while</span> 1
+0114         <span class="comment">%**************************************************************************</span>
+0115         <span class="comment">%   STEP 4: Find a noncovered zero and prime it.  If there is no starred</span>
+0116         <span class="comment">%           zero in the row containing this primed zero, Go to Step 5.</span>
+0117         <span class="comment">%           Otherwise, cover this row and uncover the column containing</span>
+0118         <span class="comment">%           the starred zero. Continue in this manner until there are no</span>
+0119         <span class="comment">%           uncovered zeros left. Save the smallest uncovered value and</span>
+0120         <span class="comment">%           Go to Step 6.</span>
+0121         <span class="comment">%**************************************************************************</span>
+0122         cR = find(~coverRow);
+0123         cC = find(~coverColumn);
+0124         rIdx = cR(rIdx);
+0125         cIdx = cC(cIdx);
+0126         Step = 6;
+0127         <span class="keyword">while</span> ~isempty(cIdx)
+0128             uZr = rIdx(1);
+0129             uZc = cIdx(1);
+0130             primeZ(uZr) = uZc;
+0131             stz = starZ(uZr);
+0132             <span class="keyword">if</span> ~stz
+0133                 Step = 5;
+0134                 <span class="keyword">break</span>;
+0135             <span class="keyword">end</span>
+0136             coverRow(uZr) = true;
+0137             coverColumn(stz) = false;
+0138             z = rIdx==uZr;
+0139             rIdx(z) = [];
+0140             cIdx(z) = [];
+0141             cR = find(~coverRow);
+0142             z = dMat(~coverRow,stz) == minR(~coverRow) + minC(stz);
+0143             rIdx = [rIdx(:);cR(z)];
+0144             cIdx = [cIdx(:);stz(ones(sum(z),1))];
+0145         <span class="keyword">end</span>
+0146         <span class="keyword">if</span> Step == 6
+0147             <span class="comment">% *************************************************************************</span>
+0148             <span class="comment">% STEP 6: Add the minimum uncovered value to every element of each covered</span>
+0149             <span class="comment">%         row, and subtract it from every element of each uncovered column.</span>
+0150             <span class="comment">%         Return to Step 4 without altering any stars, primes, or covered lines.</span>
+0151             <span class="comment">%**************************************************************************</span>
+0152             [minval,rIdx,cIdx]=<a href="#_sub1" class="code" title="subfunction [minval,rIdx,cIdx]=outerplus(M,x,y)">outerplus</a>(dMat(~coverRow,~coverColumn),minR(~coverRow),minC(~coverColumn));            
+0153             minC(~coverColumn) = minC(~coverColumn) + minval;
+0154             minR(coverRow) = minR(coverRow) - minval;
+0155         <span class="keyword">else</span>
+0156             <span class="keyword">break</span>
+0157         <span class="keyword">end</span>
+0158     <span class="keyword">end</span>
+0159     <span class="comment">%**************************************************************************</span>
+0160     <span class="comment">% STEP 5:</span>
+0161     <span class="comment">%  Construct a series of alternating primed and starred zeros as</span>
+0162     <span class="comment">%  follows:</span>
+0163     <span class="comment">%  Let Z0 represent the uncovered primed zero found in Step 4.</span>
+0164     <span class="comment">%  Let Z1 denote the starred zero in the column of Z0 (if any).</span>
+0165     <span class="comment">%  Let Z2 denote the primed zero in the row of Z1 (there will always</span>
+0166     <span class="comment">%  be one).  Continue until the series terminates at a primed zero</span>
+0167     <span class="comment">%  that has no starred zero in its column.  Unstar each starred</span>
+0168     <span class="comment">%  zero of the series, star each primed zero of the series, erase</span>
+0169     <span class="comment">%  all primes and uncover every line in the matrix.  Return to Step 3.</span>
+0170     <span class="comment">%**************************************************************************</span>
+0171     rowZ1 = find(starZ==uZc);
+0172     starZ(uZr)=uZc;
+0173     <span class="keyword">while</span> rowZ1&gt;0
+0174         starZ(rowZ1)=0;
+0175         uZc = primeZ(rowZ1);
+0176         uZr = rowZ1;
+0177         rowZ1 = find(starZ==uZc);
+0178         starZ(uZr)=uZc;
+0179     <span class="keyword">end</span>
+0180 <span class="keyword">end</span>
+0181 
+0182 <span class="comment">% Cost of assignment</span>
+0183 rowIdx = find(validRow);
+0184 colIdx = find(validCol);
+0185 starZ = starZ(1:nRows);
+0186 vIdx = starZ &lt;= nCols;
+0187 assignment(rowIdx(vIdx)) = colIdx(starZ(vIdx));
+0188 pass = assignment(assignment&gt;0);
+0189 pass(~diag(validMat(assignment&gt;0,pass))) = 0;
+0190 assignment(assignment&gt;0) = pass;
+0191 cost = trace(costMat(assignment&gt;0,assignment(assignment&gt;0)));
+0192 
+0193 <a name="_sub1" href="#_subfunctions" class="code">function [minval,rIdx,cIdx]=outerplus(M,x,y)</a>
+0194 ny=size(M,2);
+0195 minval=inf;
+0196 <span class="keyword">for</span> c=1:ny
+0197     M(:,c)=M(:,c)-(x+y(c));
+0198     minval = min(minval,min(M(:,c)));
+0199 <span class="keyword">end</span>
+0200 [rIdx,cIdx]=find(M==minval);</pre></div>
+<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

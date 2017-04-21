@@ -1,7 +1,6 @@
 
 function A = varpro2expfun(alpha,t)
-%
-% matrix of exponentials
+%VARPRO2EXPFUN Form matrix of exponentials
 %
 % Input 
 % 
@@ -12,6 +11,7 @@ function A = varpro2expfun(alpha,t)
 %
 % A(i,j) = exp(alpha_j t_i)
 %
+% See also VARPRO2DEXPFUN
 
 m = length(t);
 n = length(alpha);

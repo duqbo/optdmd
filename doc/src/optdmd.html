@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of optdmd</title>
+  <meta name="keywords" content="optdmd">
+  <meta name="description" content="OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>optdmd
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data 
+
+   [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
+
+ Input:
+
+ X - data matrix, length(t) columns with each a snapshot
+   of some time-varying system
+ t - times corresponding to each snapshot
+ r - rank of fit, i.e. number of exponentials to fit
+ imode - flag, determines type of computation
+   imode = 1, fit full data, slower
+   imode = 2, fit data projected onto first r POD modes
+      or columns of varargin{2} (should be at least r
+      columns in varargin{2})
+ varargin{1} - options structure for varpro2. see varpro_opts.m
+   for details
+ varargin{2} - initial guess. if not provided, one is computed
+   using trapezoidal rule approximation
+ varargin{3} - orthogonal basis for projection (if POD modes precomputed
+   or a different basis desired)
+
+ Output:
+
+ w - each column is a DMD mode
+ e - each entry e(i) is an eigenvalue corresponding to w(:,i)
+ b - the best fit coefficient of each DMD mode
+ varargout{1} - return projected system matrix 
+   A =  (u'*w)*diag(e)*(pinv(w)*u) where u is the first
+   r POD modes or varargin{3}.
+ varargout{2} - return basis for projection
+ varargout{3} - return full system matrix A = w*diag(e)*pinv(w)
+ 
+ X should be approximated by
+
+ X ~ w*diag(b)*exp(e*t')
+
+ if t is a column vector.
+
+ Examples:
+
+   &gt;&gt; [w,e,b] = optdmd(X,t,r,imode);
+   &gt;&gt; [w,e,b] = optdmd(xdata,ts,r,imode,opts,[],u);
+   &gt;&gt; [w,e,b] = optdmd(xdata,ts,r,imode,[],e_init);
+   &gt;&gt; [w,e,b,atilde,u,afull] = optdmd(X,t,r,imode);
+
+ See also <a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">VARPRO_OPTS</a>, <a href="varpro2.html" class="code" title="function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia,alpha_init,opts)">VARPRO2</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="varpro2.html" class="code" title="function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia,alpha_init,opts)">varpro2</a>	VARPRO2 Variable projection algorithm for multivariate data</li><li><a href="varpro2dexpfun.html" class="code" title="function A = varpro2dexpfun(alpha,t,i)">varpro2dexpfun</a>	VARPRO2DEXPFUN Form derivatives of the matrix of exponentials</li><li><a href="varpro2expfun.html" class="code" title="function A = varpro2expfun(alpha,t)">varpro2expfun</a>	VARPRO2EXPFUN Form matrix of exponentials</li><li><a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">varpro_opts</a>	VARPRO_OPTS Create options structure for varpro routines</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)</a>
+0002 <span class="comment">%OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)</span>
+0005 <span class="comment">%</span>
+0006 <span class="comment">% Input:</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% X - data matrix, length(t) columns with each a snapshot</span>
+0009 <span class="comment">%   of some time-varying system</span>
+0010 <span class="comment">% t - times corresponding to each snapshot</span>
+0011 <span class="comment">% r - rank of fit, i.e. number of exponentials to fit</span>
+0012 <span class="comment">% imode - flag, determines type of computation</span>
+0013 <span class="comment">%   imode = 1, fit full data, slower</span>
+0014 <span class="comment">%   imode = 2, fit data projected onto first r POD modes</span>
+0015 <span class="comment">%      or columns of varargin{2} (should be at least r</span>
+0016 <span class="comment">%      columns in varargin{2})</span>
+0017 <span class="comment">% varargin{1} - options structure for varpro2. see varpro_opts.m</span>
+0018 <span class="comment">%   for details</span>
+0019 <span class="comment">% varargin{2} - initial guess. if not provided, one is computed</span>
+0020 <span class="comment">%   using trapezoidal rule approximation</span>
+0021 <span class="comment">% varargin{3} - orthogonal basis for projection (if POD modes precomputed</span>
+0022 <span class="comment">%   or a different basis desired)</span>
+0023 <span class="comment">%</span>
+0024 <span class="comment">% Output:</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% w - each column is a DMD mode</span>
+0027 <span class="comment">% e - each entry e(i) is an eigenvalue corresponding to w(:,i)</span>
+0028 <span class="comment">% b - the best fit coefficient of each DMD mode</span>
+0029 <span class="comment">% varargout{1} - return projected system matrix</span>
+0030 <span class="comment">%   A =  (u'*w)*diag(e)*(pinv(w)*u) where u is the first</span>
+0031 <span class="comment">%   r POD modes or varargin{3}.</span>
+0032 <span class="comment">% varargout{2} - return basis for projection</span>
+0033 <span class="comment">% varargout{3} - return full system matrix A = w*diag(e)*pinv(w)</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% X should be approximated by</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% X ~ w*diag(b)*exp(e*t')</span>
+0038 <span class="comment">%</span>
+0039 <span class="comment">% if t is a column vector.</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% Examples:</span>
+0042 <span class="comment">%</span>
+0043 <span class="comment">%   &gt;&gt; [w,e,b] = optdmd(X,t,r,imode);</span>
+0044 <span class="comment">%   &gt;&gt; [w,e,b] = optdmd(xdata,ts,r,imode,opts,[],u);</span>
+0045 <span class="comment">%   &gt;&gt; [w,e,b] = optdmd(xdata,ts,r,imode,[],e_init);</span>
+0046 <span class="comment">%   &gt;&gt; [w,e,b,atilde,u,afull] = optdmd(X,t,r,imode);</span>
+0047 <span class="comment">%</span>
+0048 <span class="comment">% See also VARPRO_OPTS, VARPRO2</span>
+0049 
+0050 <span class="comment">%</span>
+0051 <span class="comment">% Copyright Travis Askham 2017</span>
+0052 <span class="comment">%</span>
+0053 <span class="comment">% MIT License</span>
+0054 <span class="comment">%</span>
+0055 
+0056 <span class="keyword">if</span> ((imode == 2 || nargout &gt; 3 || nargin &lt; 6 || isempty(varargin{2})) <span class="keyword">...</span>
+0057         &amp;&amp; (nargin &lt; 7) )
+0058     [u,~,~] = svd(X,<span class="string">'econ'</span>);
+0059     <span class="keyword">if</span> (imode == 2)
+0060         u = u(:,1:r);
+0061     <span class="keyword">end</span>
+0062 <span class="keyword">elseif</span> (nargin == 7)
+0063     u = varargin{3};
+0064 <span class="keyword">end</span>
+0065 
+0066 <span class="keyword">if</span> (nargin &lt; 5 || isempty(varargin{1}))
+0067     opts = <a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">varpro_opts</a>();
+0068 <span class="keyword">else</span>
+0069     opts = varargin{1};
+0070 <span class="keyword">end</span>
+0071 
+0072 <span class="keyword">if</span> (nargin &lt; 6 || isempty(varargin{2}))
+0073     
+0074     <span class="comment">% use projected trapezoidal rule approximation</span>
+0075     <span class="comment">% to eigenvalues as initial guess</span>
+0076     
+0077     ux1 = u'*X;
+0078     ux2 = ux1(:,2:end);
+0079     ux1 = ux1(:,1:end-1);
+0080 
+0081     t1 = t(1:end-1);
+0082     t2 = t(2:end);
+0083     
+0084     dx = (ux2-ux1)*diag(1./(t2-t1));
+0085     xin = (ux1+ux2)/2;
+0086 
+0087     [u1,s1,v1] = svd(xin,<span class="string">'econ'</span>);
+0088 
+0089     u1 = u1(:,1:r);
+0090     v1 = v1(:,1:r);
+0091     s1 = s1(1:r,1:r);
+0092 
+0093     atilde = u1'*dx*v1/s1;
+0094 
+0095     alpha_init = eig(atilde);
+0096    
+0097     clear ux1 ux2 atilde t1 t2 dx xin
+0098     
+0099 <span class="keyword">else</span>
+0100     
+0101     <span class="comment">% use user provided initial guess</span>
+0102     
+0103     alpha_init = varargin{2};
+0104 <span class="keyword">end</span>
+0105 
+0106 <span class="keyword">if</span> (imode == 2)
+0107     
+0108     <span class="comment">% projected version</span>
+0109     
+0110     m = length(t);
+0111     [~,n] = size(u);
+0112     ia = r;
+0113     is = r;
+0114     [w,e,~,~,~,~] = <a href="varpro2.html" class="code" title="function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia,alpha_init,opts)">varpro2</a>(transpose(u'*X),t, <span class="keyword">...</span>
+0115         @<a href="varpro2expfun.html" class="code" title="function A = varpro2expfun(alpha,t)">varpro2expfun</a>,@<a href="varpro2dexpfun.html" class="code" title="function A = varpro2dexpfun(alpha,t,i)">varpro2dexpfun</a>,m,n,is,ia,alpha_init,opts);
+0116     
+0117     w = transpose(w);
+0118     
+0119     <span class="comment">% normalize</span>
+0120     
+0121     b = sqrt(sum(abs(w).^2,1))';
+0122     w = w*diag(1./b);
+0123     
+0124     <span class="keyword">if</span> (nargout &gt; 3)
+0125         varargout{1} = w*diag(e)*pinv(w); <span class="comment">% projected propagator</span>
+0126     <span class="keyword">end</span>
+0127     
+0128     <span class="comment">% unproject dmd modes</span>
+0129     
+0130     w = u*w;
+0131     
+0132 <span class="keyword">else</span>
+0133     
+0134     <span class="comment">% fit to all of data</span>
+0135     
+0136     m = length(t);
+0137     [is,~] = size(X);
+0138     ia = r;
+0139     n = r;
+0140     [w,e,~,~,~,~] = <a href="varpro2.html" class="code" title="function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia,alpha_init,opts)">varpro2</a>(transpose(X),t, <span class="keyword">...</span>
+0141         @<a href="varpro2expfun.html" class="code" title="function A = varpro2expfun(alpha,t)">varpro2expfun</a>,@<a href="varpro2dexpfun.html" class="code" title="function A = varpro2dexpfun(alpha,t,i)">varpro2dexpfun</a>,m,n,is,ia,alpha_init,opts);
+0142     
+0143     w = transpose(w);
+0144 
+0145     <span class="comment">% normalize</span>
+0146 
+0147     b = sqrt(sum(abs(w).^2,1))';
+0148     w = w*diag(1./b);
+0149 
+0150     <span class="keyword">if</span> (nargout &gt; 3)
+0151         wproj = u'*w;
+0152         varargout{1} = wproj*diag(e)*pinv(wproj); <span class="comment">%projected propagator</span>
+0153     <span class="keyword">end</span>
+0154     
+0155     
+0156 <span class="keyword">end</span>
+0157 
+0158 <span class="keyword">if</span> (nargout &gt; 4)
+0159     <span class="keyword">if</span> (exist(<span class="string">'u'</span>,<span class="string">'var'</span>))
+0160         varargout{2} = u;
+0161     <span class="keyword">else</span>
+0162         varargout{2} = [];
+0163     <span class="keyword">end</span>
+0164 <span class="keyword">end</span>
+0165 
+0166 <span class="keyword">if</span> (nargout &gt; 5)
+0167     varargout{3} = w*diag(e)*pinv(w);
+0168 <span class="keyword">end</span>
+0169         
+0170         
+0171</pre></div>
+<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

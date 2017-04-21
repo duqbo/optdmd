@@ -1,13 +1,17 @@
 
 function varargout = XGEQP3(A)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%XGEQP3 A wrapper for calling lapack routines for QR factorization
 %
-% A wrapper for calling lapack routines 
-% for QR factorization
+% Output stores info for QR factorization in terms of 
+% elementary reflectors.
 %
-% We utilize the lapack.m file 
+% Examples:
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   >> C = XGEQP3(A) % get LAPACK output as cell structure
+%   >> [AOUT,JPVT,TAU] = XGEQP3(A) % get description sufficient for 
+%                                  % XORMQR
+%
+% See also XORMQR, LAPACK
 
 [m,n] = size(A);
 

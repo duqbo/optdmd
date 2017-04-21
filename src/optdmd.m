@@ -1,9 +1,7 @@
 function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data 
 %
-% Wrapper for computing the optimized DMD of data 
-%
-% Makes use of varpro2 routines
+%   [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %
 % Input:
 %
@@ -33,7 +31,6 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %   r POD modes or varargin{3}.
 % varargout{2} - return basis for projection
 % varargout{3} - return full system matrix A = w*diag(e)*pinv(w)
-
 % 
 % X should be approximated by
 %
@@ -41,11 +38,20 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %
 % if t is a column vector.
 %
-% Travis Askham 2017
+% Examples:
+%
+%   >> [w,e,b] = optdmd(X,t,r,imode);
+%   >> [w,e,b] = optdmd(xdata,ts,r,imode,opts,[],u);
+%   >> [w,e,b] = optdmd(xdata,ts,r,imode,[],e_init);
+%   >> [w,e,b,atilde,u,afull] = optdmd(X,t,r,imode);
+%
+% See also VARPRO_OPTS, VARPRO2
+
+%
+% Copyright Travis Askham 2017
 %
 % MIT License
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if ((imode == 2 || nargout > 3 || nargin < 6 || isempty(varargin{2})) ...
         && (nargin < 7) )
@@ -105,7 +111,7 @@ if (imode == 2)
     [~,n] = size(u);
     ia = r;
     is = r;
-    [w,e,niter,err,imode,alphas] = varpro2(transpose(u'*X),t, ...
+    [w,e,~,~,~,~] = varpro2(transpose(u'*X),t, ...
         @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init,opts);
     
     w = transpose(w);
@@ -131,7 +137,7 @@ else
     [is,~] = size(X);
     ia = r;
     n = r;
-    [w,e,niter,err,imode,alphas] = varpro2(transpose(X),t, ...
+    [w,e,~,~,~,~] = varpro2(transpose(X),t, ...
         @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init,opts);
     
     w = transpose(w);

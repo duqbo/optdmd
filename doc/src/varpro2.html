@@ -1,0 +1,452 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of varpro2</title>
+  <meta name="keywords" content="varpro2">
+  <meta name="description" content="VARPRO2 Variable projection algorithm for multivariate data">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>varpro2
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>VARPRO2 Variable projection algorithm for multivariate data</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia,alpha_init,opts) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">VARPRO2 Variable projection algorithm for multivariate data
+
+ Attempts a fit of the columns of y as linear combinations
+ of the columns of phi(alpha,t), i.e.
+
+ y_k = sum_j=1^n b_jk phi_j(alpha,t)
+
+ Note that phi(alpha,t) is a matrix of dimension
+ m x n where m is length (t) and n is number of columns.
+
+ phi_j(alpha,t) is the jth column
+ y_k is the kth column of the data
+
+ Input:
+
+ y - M x IS matrix of data
+ t - M vector of sample times
+ phi(alpha,t) - M x N matrix (or sparse matrix) valued 
+              function with input alpha
+ dphi(alpha,t,i) - M x N matrix (or sparse matrix) valued
+                 function of alpha: returns the derivative 
+                 of the entries of phi with respect to the 
+                 ith component of alpha
+ m - integer, number of rows of data/number of sample times
+ n - integer, number of columns of phi
+ is - integer, number of columns of data .. number of 
+      functions to fit
+ ia - integer, dimension of alpha
+ alpha_init - initial guess for alpha
+ opts - options structure. See varpro_opts.m for details. Can
+   be created with default values via 
+       opts = varpro_opts();
+
+ Output:
+
+ b - N x IS matrix of coefficients .. each column gives
+     the coefficients for one of the functions (columns
+     of data) corresponding to the best fit
+ alpha - N vector of values of alpha for best fit
+ niter - number of iterations of the Marquardt algorithm
+ err - the error for each iteration of the algorithm
+ imode - failure mode
+            imode = 0, normal execution, tolerance reached
+            imode = 1, maxiter reached before tolerance
+            imode = 4, failed to find new search direction
+                       at step niter
+
+ Example:
+
+   &gt;&gt; [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
+    m,n,is,ia,alpha_init,opts)
+
+ See also <a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">VARPRO_OPTS</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="XGEQP3.html" class="code" title="function varargout = XGEQP3(A)">XGEQP3</a>	XGEQP3 A wrapper for calling lapack routines for QR factorization</li><li><a href="XORMQR.html" class="code" title="function varargout = XORMQR(SIDE,TRANS,A,tau,B,varargin)">XORMQR</a>	XORMQR  A wrapper for multiplying by Householder reflectors</li><li><a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">varpro_opts</a>	VARPRO_OPTS Create options structure for varpro routines</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="optdmd.html" class="code" title="function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)">optdmd</a>	OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function out = varpro2_getfield(opts,opts_default,in)</a></li><li><a href="#_sub2" class="code">function x = varpro2_solve_special(R,D,b)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, </a><span class="keyword">...</span>
+0002     m,n,is,ia,alpha_init,opts)
+0003 <span class="comment">%VARPRO2 Variable projection algorithm for multivariate data</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Attempts a fit of the columns of y as linear combinations</span>
+0006 <span class="comment">% of the columns of phi(alpha,t), i.e.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% y_k = sum_j=1^n b_jk phi_j(alpha,t)</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Note that phi(alpha,t) is a matrix of dimension</span>
+0011 <span class="comment">% m x n where m is length (t) and n is number of columns.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% phi_j(alpha,t) is the jth column</span>
+0014 <span class="comment">% y_k is the kth column of the data</span>
+0015 <span class="comment">%</span>
+0016 <span class="comment">% Input:</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% y - M x IS matrix of data</span>
+0019 <span class="comment">% t - M vector of sample times</span>
+0020 <span class="comment">% phi(alpha,t) - M x N matrix (or sparse matrix) valued</span>
+0021 <span class="comment">%              function with input alpha</span>
+0022 <span class="comment">% dphi(alpha,t,i) - M x N matrix (or sparse matrix) valued</span>
+0023 <span class="comment">%                 function of alpha: returns the derivative</span>
+0024 <span class="comment">%                 of the entries of phi with respect to the</span>
+0025 <span class="comment">%                 ith component of alpha</span>
+0026 <span class="comment">% m - integer, number of rows of data/number of sample times</span>
+0027 <span class="comment">% n - integer, number of columns of phi</span>
+0028 <span class="comment">% is - integer, number of columns of data .. number of</span>
+0029 <span class="comment">%      functions to fit</span>
+0030 <span class="comment">% ia - integer, dimension of alpha</span>
+0031 <span class="comment">% alpha_init - initial guess for alpha</span>
+0032 <span class="comment">% opts - options structure. See varpro_opts.m for details. Can</span>
+0033 <span class="comment">%   be created with default values via</span>
+0034 <span class="comment">%       opts = varpro_opts();</span>
+0035 <span class="comment">%</span>
+0036 <span class="comment">% Output:</span>
+0037 <span class="comment">%</span>
+0038 <span class="comment">% b - N x IS matrix of coefficients .. each column gives</span>
+0039 <span class="comment">%     the coefficients for one of the functions (columns</span>
+0040 <span class="comment">%     of data) corresponding to the best fit</span>
+0041 <span class="comment">% alpha - N vector of values of alpha for best fit</span>
+0042 <span class="comment">% niter - number of iterations of the Marquardt algorithm</span>
+0043 <span class="comment">% err - the error for each iteration of the algorithm</span>
+0044 <span class="comment">% imode - failure mode</span>
+0045 <span class="comment">%            imode = 0, normal execution, tolerance reached</span>
+0046 <span class="comment">%            imode = 1, maxiter reached before tolerance</span>
+0047 <span class="comment">%            imode = 4, failed to find new search direction</span>
+0048 <span class="comment">%                       at step niter</span>
+0049 <span class="comment">%</span>
+0050 <span class="comment">% Example:</span>
+0051 <span class="comment">%</span>
+0052 <span class="comment">%   &gt;&gt; [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...</span>
+0053 <span class="comment">%    m,n,is,ia,alpha_init,opts)</span>
+0054 <span class="comment">%</span>
+0055 <span class="comment">% See also VARPRO_OPTS</span>
+0056 
+0057 <span class="comment">%</span>
+0058 <span class="comment">% Copyright (c) 2017 Travis Askham</span>
+0059 <span class="comment">%</span>
+0060 <span class="comment">% Available under the MIT license</span>
+0061 <span class="comment">%</span>
+0062 <span class="comment">% References:</span>
+0063 <span class="comment">% - Extensions and Uses of the Variable Projection</span>
+0064 <span class="comment">% Algorith for Solving Nonlinear Least Squares Problems by</span>
+0065 <span class="comment">% G. H. Golub and R. J. LeVeque ARO Report 79-3, Proceedings</span>
+0066 <span class="comment">% of the 1979 Army Numerical Analsysis and Computers Conference</span>
+0067 <span class="comment">% - &quot;Variable projection for nonlinear least squares problems.&quot;</span>
+0068 <span class="comment">% Computational Optimization and Applications 54.3 (2013): 579-593.</span>
+0069 <span class="comment">% by Dianne P. O’Leary and Bert W. Rust.</span>
+0070 <span class="comment">%</span>
+0071 
+0072 
+0073 <span class="comment">% various error and warning string formats</span>
+0074 
+0075 mode8str = [<span class="string">'stall detected: residual reduced by less than %e'</span> <span class="keyword">...</span>
+0076     <span class="string">' times residual at previous step. iteration %d'</span> <span class="keyword">...</span>
+0077     <span class="string">'. current residual %e'</span>];
+0078 mode4str = [<span class="string">'failed to find appropriate step length at iteration %d'</span> <span class="keyword">...</span>
+0079     <span class="string">'. current residual %e'</span>];
+0080 mode1str = [<span class="string">'failed to reach tolerance after maxiter = %d'</span> <span class="keyword">...</span>
+0081     <span class="string">' iterations. current residual %e'</span>];
+0082 optstr1 = [<span class="string">'input opts must be a structure, see varpro_opts.m.'</span> <span class="keyword">...</span>
+0083     <span class="string">' Using default options ...'</span>];
+0084     
+0085 <span class="comment">% set options, try to catch mistakes</span>
+0086 
+0087 opts_default = <a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">varpro_opts</a>();
+0088 
+0089 <span class="keyword">if</span> (~isstruct(opts))
+0090     warning(optstr1);
+0091     opts = opts_default;
+0092 <span class="keyword">end</span>
+0093 
+0094 lambda0 = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'lambda0'</span>);
+0095 maxlam = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'maxlam'</span>);
+0096 lamup = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'lamup'</span>);
+0097 lamdown = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'lamdown'</span>);
+0098 ifmarq = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'ifmarq'</span>);
+0099 maxiter = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'maxiter'</span>);
+0100 tol = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'tol'</span>);
+0101 eps_stall = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'eps_stall'</span>);
+0102 iffulljac = <a href="#_sub1" class="code" title="subfunction out = varpro2_getfield(opts,opts_default,in)">varpro2_getfield</a>(opts,opts_default,<span class="string">'iffulljac'</span>);
+0103 
+0104 <span class="comment">% initialize values</span>
+0105 
+0106 alpha = alpha_init;
+0107 alphas = zeros(length(alpha),maxiter);
+0108 djacmat = zeros(m*is,ia);
+0109 err = zeros(maxiter,1);
+0110 res_scale = norm(y,<span class="string">'fro'</span>);
+0111 scales = zeros(ia,1);
+0112 
+0113 phimat = phi(alpha,t);
+0114 [U,S,V] = svd(phimat,<span class="string">'econ'</span>);
+0115 sd = diag(S);
+0116 tolrank = m*eps;
+0117 irank = sum(sd &gt; tolrank*sd(1));
+0118 U = U(:,1:irank);
+0119 S = S(1:irank,1:irank);
+0120 V = V(:,1:irank);
+0121 b = phimat\y;
+0122 res = y - phimat*b;
+0123 errlast = norm(res,<span class="string">'fro'</span>)/res_scale;
+0124 
+0125 imode = 0;
+0126 
+0127 <span class="keyword">for</span> iter = 1:maxiter
+0128     
+0129     <span class="comment">% build jacobian matrix, looping over alpha indeces</span>
+0130     
+0131     <span class="keyword">for</span> j = 1:ia
+0132         dphitemp = dphi(alpha,t,j);
+0133         djaca = (dphitemp - sparse(U*(sparse(U'*dphitemp))))*b;
+0134         <span class="keyword">if</span> (iffulljac == 1)
+0135             <span class="comment">% use full expression for Jacobian</span>
+0136             djacb = U*(S\(V'*(sparse(dphitemp'*res))));
+0137             djacmat(:,j) = -(djaca(:) + djacb(:));
+0138         <span class="keyword">else</span>
+0139             <span class="comment">% use approximate expression</span>
+0140             djacmat(:,j) = -djaca(:);
+0141         <span class="keyword">end</span>
+0142         <span class="comment">% the scales give the &quot;marquardt&quot; part of the algo.</span>
+0143         scales(j) = 1;
+0144         <span class="keyword">if</span> (ifmarq == 1)
+0145             scales(j) = min(norm(djacmat(:,j)),1);
+0146             scales(j) = max(scales(j),1e-6);
+0147         <span class="keyword">end</span>
+0148     <span class="keyword">end</span>
+0149     
+0150     <span class="comment">% loop to determine lambda (lambda gives the &quot;levenberg&quot; part)</span>
+0151 
+0152     <span class="comment">% pre-compute components that don't depend on</span>
+0153     <span class="comment">% step-size parameter (lambda)</span>
+0154     
+0155     <span class="comment">% get pivots and lapack style qr for jacobian matrix</span>
+0156     
+0157     [djacout,jpvt,tau] = <a href="XGEQP3.html" class="code" title="function varargout = XGEQP3(A)">XGEQP3</a>(djacmat);
+0158     rjac = triu(djacout); <span class="comment">% r from qr of jacobian</span>
+0159     rhstop = <a href="XORMQR.html" class="code" title="function varargout = XORMQR(SIDE,TRANS,A,tau,B,varargin)">XORMQR</a>(<span class="string">'L'</span>,<span class="string">'T'</span>,djacout,tau,res(:)); <span class="comment">% Q'*res</span>
+0160     scalespvt = scales(jpvt(1:ia)); <span class="comment">% permute scales appropriately...</span>
+0161     rhs = [rhstop; zeros(ia,1)]; <span class="comment">% transformed right hand side</span>
+0162     
+0163     <span class="comment">% check if current step size or shrunk version works</span>
+0164     
+0165     <span class="comment">% get step</span>
+0166     
+0167     delta0 = <a href="#_sub2" class="code" title="subfunction x = varpro2_solve_special(R,D,b)">varpro2_solve_special</a>(rjac,lambda0*diag(scalespvt),rhs);
+0168     delta0(jpvt(1:ia)) = delta0; <span class="comment">% unscramble solution</span>
+0169     
+0170     <span class="comment">% new alpha guess</span>
+0171     
+0172     alpha0 = alpha - delta0;
+0173     
+0174     <span class="comment">% corresponding residual</span>
+0175     
+0176     phimat = phi(alpha0,t);
+0177     b0 = phimat\y;
+0178     res0 = y-phimat*b0;
+0179     err0 = norm(res0,<span class="string">'fro'</span>)/res_scale;
+0180     
+0181     <span class="comment">% check if this is an improvement</span>
+0182     
+0183     <span class="keyword">if</span> (err0 &lt; errlast) 
+0184 
+0185         <span class="comment">% see if a smaller lambda is better</span>
+0186         
+0187         lambda1 = lambda0/lamdown;
+0188         delta1 = <a href="#_sub2" class="code" title="subfunction x = varpro2_solve_special(R,D,b)">varpro2_solve_special</a>(rjac,lambda1*diag(scalespvt),rhs);
+0189         delta1(jpvt(1:ia)) = delta1; <span class="comment">% unscramble solution</span>
+0190 
+0191         alpha1 = alpha - delta1;
+0192         phimat = phi(alpha1,t);
+0193         b1 = phimat\y;
+0194         res1 = y-phimat*b1;
+0195         err1 = norm(res1,<span class="string">'fro'</span>)/res_scale;
+0196         
+0197         <span class="keyword">if</span> (err1 &lt; err0)
+0198             lambda0 = lambda1;
+0199             alpha = alpha1;
+0200             errlast = err1;
+0201             b = b1;
+0202             res = res1;
+0203         <span class="keyword">else</span>
+0204             alpha = alpha0;
+0205             errlast = err0;
+0206             b = b0;
+0207             res = res0;
+0208         <span class="keyword">end</span>
+0209     <span class="keyword">else</span>
+0210     <span class="comment">% if not, increase lambda until something works</span>
+0211     <span class="comment">% this makes the algorithm more and more like gradient descent</span>
+0212     
+0213         <span class="keyword">for</span> j = 1:maxlam
+0214         
+0215             lambda0 = lambda0*lamup;
+0216             delta0 = <a href="#_sub2" class="code" title="subfunction x = varpro2_solve_special(R,D,b)">varpro2_solve_special</a>(rjac,lambda0*diag(scalespvt),rhs);
+0217             delta0(jpvt(1:ia)) = delta0; <span class="comment">% unscramble solution</span>
+0218             
+0219             alpha0 = alpha - delta0;
+0220 
+0221             phimat = phi(alpha0,t);
+0222             b0 = phimat\y;
+0223             res0 = y-phimat*b0;
+0224             err0 = norm(res0,<span class="string">'fro'</span>)/res_scale;
+0225             
+0226             <span class="keyword">if</span> (err0 &lt; errlast) 
+0227                 <span class="keyword">break</span>
+0228             <span class="keyword">end</span>
+0229 
+0230         <span class="keyword">end</span>
+0231         
+0232         <span class="keyword">if</span> (err0 &lt; errlast) 
+0233             alpha = alpha0;
+0234             errlast = err0;
+0235             b = b0;
+0236             res = res0;
+0237         <span class="keyword">else</span>
+0238             
+0239             <span class="comment">% no appropriate step length found</span>
+0240             
+0241             niter = iter;
+0242             err(niter) = errlast;
+0243             imode = 4;
+0244             warning(mode4str,iter,errlast);
+0245             <span class="keyword">return</span>
+0246         <span class="keyword">end</span>
+0247     <span class="keyword">end</span>
+0248     
+0249     alphas(:,iter) = alpha;
+0250     
+0251     err(iter) = errlast;
+0252     <span class="keyword">if</span> (errlast &lt; tol)
+0253         
+0254         <span class="comment">% tolerance met</span>
+0255         
+0256         niter = iter;
+0257         <span class="keyword">return</span>;
+0258     <span class="keyword">end</span>
+0259     
+0260     <span class="keyword">if</span> (iter &gt; 1)
+0261         <span class="keyword">if</span> (err(iter-1)-err(iter) &lt; eps_stall*err(iter-1))
+0262             
+0263             <span class="comment">% stall detected</span>
+0264             
+0265             niter = iter;
+0266             imode = 8;
+0267             warning(mode8str,eps_stall,iter,errlast);
+0268             <span class="keyword">return</span>;
+0269         <span class="keyword">end</span>
+0270     <span class="keyword">end</span>
+0271     
+0272     phimat = phi(alpha,t);
+0273     [U,S,V] = svd(phimat,<span class="string">'econ'</span>);
+0274     sd = diag(S);
+0275     irank = sum(sd &gt; tolrank*sd(1));
+0276     U = U(:,1:irank);
+0277     S = S(1:irank,1:irank);
+0278     V = V(:,1:irank);
+0279     
+0280 <span class="keyword">end</span>
+0281 
+0282 <span class="comment">% failed to meet tolerance in maxiter steps</span>
+0283 
+0284 niter = maxiter;
+0285 imode = 1;
+0286 warning(mode1str,maxiter,errlast);
+0287 
+0288 <span class="keyword">end</span>
+0289 
+0290 <a name="_sub1" href="#_subfunctions" class="code">function out = varpro2_getfield(opts,opts_default,in)</a>
+0291 <span class="comment">%VARPRO2_GETFIELD Get value of field from struct if it exists,</span>
+0292 <span class="comment">% otherwise set to default value</span>
+0293 
+0294 optstr2 = <span class="string">'opts struct is missing %s field, using default'</span>;
+0295 optstr3 = <span class="string">'opts default struct is missing %s field! bomb'</span>;
+0296 
+0297 <span class="keyword">if</span> (isfield(opts,in))
+0298     out = opts.(in);
+0299 <span class="keyword">else</span>
+0300     warning(optstr2,in);
+0301     <span class="keyword">if</span> (isfield(opts_default,in))
+0302         out = opts_default.(in);
+0303     <span class="keyword">else</span>
+0304         error(optstr3,in);
+0305     <span class="keyword">end</span>
+0306 <span class="keyword">end</span>
+0307 
+0308 <span class="keyword">end</span>
+0309 
+0310 <a name="_sub2" href="#_subfunctions" class="code">function x = varpro2_solve_special(R,D,b)</a>
+0311 <span class="comment">% VARPRO2_SOLVE_SPECIAL Solves a system of the form</span>
+0312 <span class="comment">%</span>
+0313 <span class="comment">%     [ R ]</span>
+0314 <span class="comment">%     [---] x = b</span>
+0315 <span class="comment">%     [ D ]</span>
+0316 <span class="comment">%</span>
+0317 <span class="comment">% Where R is upper triangular and D is</span>
+0318 <span class="comment">% diagonal, using orthogonal reflectors as</span>
+0319 <span class="comment">% described in:</span>
+0320 <span class="comment">%</span>
+0321 <span class="comment">% Gene H. Golub and V. Pereyra, 'The Differentiation of</span>
+0322 <span class="comment">%   Pseudo-inverses and Nonlinear Least Squares Problems</span>
+0323 <span class="comment">%   Whose Variables Separate,' SIAM J. Numer. Analysis 10,</span>
+0324 <span class="comment">%   413-432 (1973).</span>
+0325 <span class="comment">%</span>
+0326 <span class="comment">% Fill-in is reduced for such a system. This</span>
+0327 <span class="comment">% routine does not pivot</span>
+0328 <span class="comment">%</span>
+0329 
+0330 A = [R; D];
+0331 [m,n] = size(R);
+0332 [ma,na] = size(A);
+0333 <span class="keyword">if</span> (ma ~= length(b) || ma ~= m+n || na ~= n)
+0334     error(<span class="string">'something went wrong'</span>)
+0335 <span class="keyword">end</span>
+0336 
+0337 <span class="keyword">for</span> i = 1:n
+0338     ind = [i, m+1:m+i];
+0339     u = A(ind,i);
+0340     sigma =  norm(u);
+0341     beta = 1/(sigma*(sigma+abs(u(1))));
+0342     u(1) = sign(u(1))*(sigma+abs(u(1)));
+0343     A(ind,i:end) = A(ind,i:end)-beta*u*(u'*A(ind,i:end));
+0344     b(ind) = b(ind)-beta*u*(u'*b(ind));
+0345 <span class="keyword">end</span>
+0346 
+0347 RA = triu(A);
+0348 RA = RA(1:n,1:n);
+0349 
+0350 x = RA\b(1:n);
+0351 
+0352 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

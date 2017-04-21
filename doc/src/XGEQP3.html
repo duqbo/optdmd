@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of XGEQP3</title>
+  <meta name="keywords" content="XGEQP3">
+  <meta name="description" content="XGEQP3 A wrapper for calling lapack routines for QR factorization">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>XGEQP3
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>XGEQP3 A wrapper for calling lapack routines for QR factorization</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function varargout = XGEQP3(A) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">XGEQP3 A wrapper for calling lapack routines for QR factorization
+
+ Output stores info for QR factorization in terms of 
+ elementary reflectors.
+
+ Examples:
+
+   &gt;&gt; C = XGEQP3(A) % get LAPACK output as cell structure
+   &gt;&gt; [AOUT,JPVT,TAU] = XGEQP3(A) % get description sufficient for 
+                                  % XORMQR
+
+ See also <a href="XORMQR.html" class="code" title="function varargout = XORMQR(SIDE,TRANS,A,tau,B,varargin)">XORMQR</a>, <a href="lapack.html" class="code" title="function [varargout] = lapack(varargin);">LAPACK</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="lapack.html" class="code" title="function [varargout] = lapack(varargin);">lapack</a>	LAPACK Call any LAPACK or BLAS function or subroutine.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="varpro2.html" class="code" title="function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi,m,n,is,ia,alpha_init,opts)">varpro2</a>	VARPRO2 Variable projection algorithm for multivariate data</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 
+0002 <a name="_sub0" href="#_subfunctions" class="code">function varargout = XGEQP3(A)</a>
+0003 <span class="comment">%XGEQP3 A wrapper for calling lapack routines for QR factorization</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Output stores info for QR factorization in terms of</span>
+0006 <span class="comment">% elementary reflectors.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Examples:</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">%   &gt;&gt; C = XGEQP3(A) % get LAPACK output as cell structure</span>
+0011 <span class="comment">%   &gt;&gt; [AOUT,JPVT,TAU] = XGEQP3(A) % get description sufficient for</span>
+0012 <span class="comment">%                                  % XORMQR</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% See also XORMQR, LAPACK</span>
+0015 
+0016 [m,n] = size(A);
+0017 
+0018 <span class="keyword">if</span> (nargout ~= 1 &amp;&amp; nargout ~= 3)
+0019     error(<span class="string">'Only 1 or 3 output arguments supported'</span>);
+0020 <span class="keyword">end</span>
+0021 
+0022 <span class="keyword">if</span> (isa(A,<span class="string">'double'</span>))
+0023     <span class="keyword">if</span> (isreal(A))
+0024         s = <span class="string">'D'</span>;
+0025         funstr = [s, <span class="string">'GEQP3'</span>];
+0026         lwork = -1;
+0027         C = <a href="lapack.html" class="code" title="function [varargout] = lapack(varargin);">lapack</a>(funstr,m,n,A,m,zeros(max(m,n),1), <span class="keyword">...</span>
+0028             zeros(max(m,n),1),zeros(10,1),lwork,0);
+0029         lwork = C{7}(1);
+0030         C = <a href="lapack.html" class="code" title="function [varargout] = lapack(varargin);">lapack</a>(funstr,m,n,A,m,zeros(max(m,n),1), <span class="keyword">...</span>
+0031            zeros(max(m,n),1),zeros(lwork,1),lwork,0);
+0032     <span class="keyword">else</span>
+0033         s = <span class="string">'Z'</span>;
+0034         funstr = [s, <span class="string">'GEQP3'</span>];
+0035         lwork = -1;
+0036         C = <a href="lapack.html" class="code" title="function [varargout] = lapack(varargin);">lapack</a>(funstr,m,n,A,m,zeros(2*n,1), <span class="keyword">...</span>
+0037             zeros(2*n,1),zeros(10,1),lwork,zeros(4*n,1),0);
+0038         lwork = C{7}(1);
+0039         C = <a href="lapack.html" class="code" title="function [varargout] = lapack(varargin);">lapack</a>(funstr,m,n,A,m,zeros(2*n,1), <span class="keyword">...</span>
+0040            zeros(2*n,1),zeros(lwork,1),lwork,zeros(4*n,1),0);
+0041     <span class="keyword">end</span>
+0042 <span class="keyword">else</span>
+0043     error(<span class="string">'Data type of A unsupported at this time'</span>);
+0044 <span class="keyword">end</span>
+0045 
+0046 <span class="keyword">if</span> (nargout == 1)
+0047     varargout{1} = C;
+0048 <span class="keyword">else</span>
+0049     varargout{1} = C{3};
+0050     varargout{2} = C{5};
+0051     varargout{3} = C{6};    
+0052 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

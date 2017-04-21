@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of randsvd2</title>
+  <meta name="keywords" content="randsvd2">
+  <meta name="description" content="RANDSVD2 Compute the SVD using random projections">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>randsvd2
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>RANDSVD2 Compute the SVD using random projections</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [U,S,V] = randsvd2(A,p,q) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">RANDSVD2 Compute the SVD using random projections
+
+ An implementation of the random SVD
+ algorithms 4.4.1 and 4.4 of
+ &quot;Finding structure with randomness&quot;
+
+ Input:
+
+ A - matrix
+ p - target rank p
+ q - number of subspace iterations
+     to perform (the best number is
+     determined by the decay of the 
+     singular values of A. We recommend
+     taking q &gt;= 2)
+
+ Output:
+
+ [U,S,V] - reduced (rank p) singular value decomposition of A
+
+ Example:
+
+   &gt;&gt; [U,S,V] = randsvd2(A,10,3)
+
+ See also SVD</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [U,S,V] = randsvd2(A,p,q)</a>
+0002 <span class="comment">%RANDSVD2 Compute the SVD using random projections</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% An implementation of the random SVD</span>
+0005 <span class="comment">% algorithms 4.4.1 and 4.4 of</span>
+0006 <span class="comment">% &quot;Finding structure with randomness&quot;</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Input:</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% A - matrix</span>
+0011 <span class="comment">% p - target rank p</span>
+0012 <span class="comment">% q - number of subspace iterations</span>
+0013 <span class="comment">%     to perform (the best number is</span>
+0014 <span class="comment">%     determined by the decay of the</span>
+0015 <span class="comment">%     singular values of A. We recommend</span>
+0016 <span class="comment">%     taking q &gt;= 2)</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Output:</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">% [U,S,V] - reduced (rank p) singular value decomposition of A</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% Example:</span>
+0023 <span class="comment">%</span>
+0024 <span class="comment">%   &gt;&gt; [U,S,V] = randsvd2(A,10,3)</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% See also SVD</span>
+0027 
+0028 <span class="comment">%</span>
+0029 <span class="comment">% Copyright 2017 Travis Askham</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% MIT License</span>
+0032 <span class="comment">%</span>
+0033 [m,n] = size(A);
+0034 nr = min(max(2*p,p+5),n);
+0035 r = randn(n,nr);
+0036 Y = A*r;
+0037 [QY,~,~] = qr(Y,0);
+0038 
+0039 <span class="keyword">if</span> (q &gt; 0)
+0040     Ap = A';
+0041 <span class="keyword">end</span>
+0042 
+0043 <span class="comment">% perform subspace iteration</span>
+0044 
+0045 <span class="keyword">for</span> j = 1:q
+0046     Y = Ap*QY;
+0047     [QY,~,~] = qr(Y,0);
+0048     Y = A*QY;
+0049     [QY,~,~] = qr(Y,0);
+0050 <span class="keyword">end</span>
+0051 
+0052 AY = QY'*A;
+0053 [U,S,V] = svd(AY,0);
+0054 U = QY*U;
+0055 U = U(:,1:p);
+0056 S = S(1:p,1:p);
+0057 V = V(:,1:p);
+0058 
+0059 <span class="keyword">end</span>
+0060</pre></div>
+<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

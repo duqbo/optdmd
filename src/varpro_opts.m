@@ -1,7 +1,5 @@
 function opts = varpro_opts(varargin)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Create options structure for varpro routines
+%VARPRO_OPTS Create options structure for varpro routines
 %
 % INPUT: 
 %
@@ -63,9 +61,18 @@ function opts = varpro_opts(varargin)
 %   the full expression for the Jacobian or Kaufman's 
 %   approximation.
 %
-% Author: Travis Askham
+% Examples:
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   >> opts = varpro_opts()
+%   >> opts = varpro_opts('maxiter',25,'tol',1e-9)
+%
+% See also VARPRO2
+
+%
+% Copyright 2017 Travis Askham
+% Available under the MIT license
+%
+
 
 errstr1 = 'nargin = %d. input should be pairs of values';
 errstr2 = 'input %d is not a valid field name';
