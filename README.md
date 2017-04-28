@@ -2,6 +2,15 @@
 
 A MATLAB package for computing the optimized DMD
 
+## About
+
+Information about the optimized DMD and this implementation
+can be found in [this preprint](https://arxiv.org/abs/1704.02343v1).
+The source files contain documentation; for 
+an interactive look at this documentation, open 
+the index.html file from the docs folder in
+a web browser.
+
 ## Set-up
 
 These codes make use of Timothy Toolan's MatLab
