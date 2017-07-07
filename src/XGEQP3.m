@@ -33,11 +33,11 @@ if (isa(A,'double'))
         s = 'Z';
         funstr = [s, 'GEQP3'];
         lwork = -1;
-        C = lapack(funstr,m,n,A,m,zeros(2*n,1), ...
-            zeros(2*n,1),zeros(10,1),lwork,zeros(4*n,1),0);
+        C = lapack(funstr,m,n,A,m,zeros(2*max(m,n),1), ...
+            zeros(2*max(m,n),1),zeros(10,1),lwork,zeros(4*max(m,n),1),0);
         lwork = C{7}(1);
-        C = lapack(funstr,m,n,A,m,zeros(2*n,1), ...
-           zeros(2*n,1),zeros(lwork,1),lwork,zeros(4*n,1),0);
+        C = lapack(funstr,m,n,A,m,zeros(2*max(m,n),1), ...
+           zeros(2*max(m,n),1),zeros(lwork,1),lwork,zeros(4*max(m,n),1),0);
     end
 else
     error('Data type of A unsupported at this time');
