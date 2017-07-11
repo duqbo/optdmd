@@ -5,13 +5,23 @@
 %% before running the scripts in the examples 
 %% folder
 
+% create bin folder if it doesn't exist
+
+if ~exist('./bin', 'dir')
+  mkdir('./bin');
+end
+
 % add appropriate folders to path
 
+addpath('./bin');
 addpath('./src');
 addpath('./examples');
 
-% make sure that the lapack mex file has been
-% compiled. respond 'y' to install
+% compile mex binaries
 
-lapack('dgesvd');
+buildqrmex
+
+% test mex binaries
+
+testqrmex
 

@@ -91,6 +91,8 @@ if (~isstruct(opts))
     opts = opts_default;
 end
 
+display('with MATLAB qr')
+
 lambda0 = varpro2_getfield(opts,opts_default,'lambda0');
 maxlam = varpro2_getfield(opts,opts_default,'maxlam');
 lamup = varpro2_getfield(opts,opts_default,'lamup');
@@ -154,11 +156,15 @@ for iter = 1:maxiter
     
     % get pivots and lapack style qr for jacobian matrix
     
-    [djacout,jpvt,tau] = xgeqp3_m(djacmat);
-    rjac = triu(djacout); % r from qr of jacobian
-    rhstop = xormqr_m('L','T',djacout,tau,res(:)); % Q'*res
+%     [djacout,jpvt,tau] = XGEQP3(djacmat);
+%     rjac = triu(djacout); % r from qr of jacobian
+%     rhstop = XORMQR('L','T',djacout,tau,res(:)); % Q'*res
+    
+    [q, rjac, jpvt] = qr(djacmat,0);
+    rhstop = q'*res(:);
     scalespvt = scales(jpvt(1:ia)); % permute scales appropriately...
     rhs = [rhstop; zeros(ia,1)]; % transformed right hand side
+    
     
     % check if current step size or shrunk version works
     
