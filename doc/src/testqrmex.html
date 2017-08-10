@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of testqrmex</title>
+  <meta name="keywords" content="testqrmex">
+  <meta name="description" content="% test lapack qr routines">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>testqrmex
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>% test lapack qr routines</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">% test lapack qr routines</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 
+0002 <span class="comment">%% test lapack qr routines</span>
+0003 
+0004 m = 300;
+0005 n = 200;
+0006 nrhs = 10;
+0007 
+0008 A = randn(m,n) + 1i*randn(m,n);
+0009 xtrue = randn(n,nrhs) + 1i*randn(n,nrhs);
+0010 
+0011 <span class="keyword">if</span> (1 == 1)
+0012     A = real(A);
+0013     xtrue = real(xtrue);
+0014 <span class="keyword">end</span>
+0015 
+0016 B = A*xtrue;
+0017 
+0018 tic
+0019 [AOUT,jpvt,tau] = xgeqp3_m(A);
+0020 C = xormqr_m(<span class="string">'L'</span>,<span class="string">'T'</span>,AOUT,tau,B);
+0021 R = triu(AOUT);
+0022 y = R\C;
+0023 x = zeros(size(y));
+0024 x(jpvt(1:length(y)),:) = y;
+0025 toc
+0026 
+0027 norm(x-xtrue)
+0028 norm(A*x-B)/norm(B)</pre></div>
+<hr><address>Generated on Thu 10-Aug-2017 15:27:21 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

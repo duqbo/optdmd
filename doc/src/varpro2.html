@@ -84,7 +84,7 @@
 <h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
 This function calls:
 <ul style="list-style-image:url(../matlabicon.gif)">
-<li><a href="XGEQP3.html" class="code" title="function varargout = XGEQP3(A)">XGEQP3</a>	XGEQP3 A wrapper for calling lapack routines for QR factorization</li><li><a href="XORMQR.html" class="code" title="function varargout = XORMQR(SIDE,TRANS,A,tau,B,varargin)">XORMQR</a>	XORMQR  A wrapper for multiplying by Householder reflectors</li><li><a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">varpro_opts</a>	VARPRO_OPTS Create options structure for varpro routines</li></ul>
+<li><a href="varpro_opts.html" class="code" title="function opts = varpro_opts(varargin)">varpro_opts</a>	VARPRO_OPTS Create options structure for varpro routines</li></ul>
 This function is called by:
 <ul style="list-style-image:url(../matlabicon.gif)">
 <li><a href="optdmd.html" class="code" title="function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)">optdmd</a>	OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data</li></ul>
@@ -251,9 +251,9 @@ This function is called by:
 0154     
 0155     <span class="comment">% get pivots and lapack style qr for jacobian matrix</span>
 0156     
-0157     [djacout,jpvt,tau] = <a href="XGEQP3.html" class="code" title="function varargout = XGEQP3(A)">XGEQP3</a>(djacmat);
+0157     [djacout,jpvt,tau] = xgeqp3_m(djacmat);
 0158     rjac = triu(djacout); <span class="comment">% r from qr of jacobian</span>
-0159     rhstop = <a href="XORMQR.html" class="code" title="function varargout = XORMQR(SIDE,TRANS,A,tau,B,varargin)">XORMQR</a>(<span class="string">'L'</span>,<span class="string">'T'</span>,djacout,tau,res(:)); <span class="comment">% Q'*res</span>
+0159     rhstop = xormqr_m(<span class="string">'L'</span>,<span class="string">'T'</span>,djacout,tau,res(:)); <span class="comment">% Q'*res</span>
 0160     scalespvt = scales(jpvt(1:ia)); <span class="comment">% permute scales appropriately...</span>
 0161     rhs = [rhstop; zeros(ia,1)]; <span class="comment">% transformed right hand side</span>
 0162     
@@ -447,6 +447,6 @@ This function is called by:
 0350 x = RA\b(1:n);
 0351 
 0352 <span class="keyword">end</span></pre></div>
-<hr><address>Generated on Fri 21-Apr-2017 13:38:46 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+<hr><address>Generated on Thu 10-Aug-2017 15:27:21 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
 </body>
 </html>

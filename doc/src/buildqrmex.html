@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of buildqrmex</title>
+  <meta name="keywords" content="buildqrmex">
+  <meta name="description" content="build mex binaries">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html src -->
+<h1>buildqrmex
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>build mex binaries</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> build mex binaries</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 
+0002 <span class="comment">% build mex binaries</span>
+0003 
+0004 fortheaderdir = fullfile(matlabroot,<span class="string">'extern'</span>,<span class="string">'examples'</span>,<span class="string">'refbook'</span>);
+0005 fortfile = fullfile(matlabroot,<span class="string">'extern'</span>,<span class="string">'examples'</span>,<span class="string">'refbook'</span>,<span class="string">'fort.c'</span>);
+0006 
+0007 mex(<span class="string">'-v'</span>,<span class="string">'-outdir'</span>,<span class="string">'./bin'</span>,<span class="string">'-largeArrayDims'</span>,[<span class="string">'-I'</span> fortheaderdir],<span class="string">'./src/xgeqp3_m.c'</span>,fortfile,<span class="string">'-lmwlapack'</span>)
+0008 mex(<span class="string">'-v'</span>,<span class="string">'-outdir'</span>,<span class="string">'./bin'</span>,<span class="string">'-largeArrayDims'</span>,[<span class="string">'-I'</span> fortheaderdir],<span class="string">'./src/xormqr_m.c'</span>,fortfile,<span class="string">'-lmwlapack'</span>)</pre></div>
+<hr><address>Generated on Thu 10-Aug-2017 15:27:21 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>
