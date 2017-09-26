@@ -1,5 +1,5 @@
 function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
-    m,n,is,ia,alpha_init,opts)
+    m,n,is,ia,alpha_init,opts,varargin)
 %VARPRO2 Variable projection algorithm for multivariate data
 %
 % Attempts a fit of the columns of y as linear combinations
@@ -33,6 +33,25 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 %   be created with default values via 
 %       opts = varpro_opts();
 %
+% varargin{1} = copts - linear constraint options structure.
+%                       See varpro_lsqlinopts.m for details.
+%                       allows you to enforce linear constraints.
+%              
+%
+% the constrained version uses lsqlin from the optimization
+% toolbox. the bounds enforced are
+%
+% Ac*alpha <= bc
+% Ace*alpha = bce
+% lbc <= alpha <= ubc
+%
+% For unbounded parts, set to lbc(i) = -Inf or ubc(j) = Inf
+% For unneeded bounds, set input to []
+% see LSQLIN for more info
+%
+% NOTE: Linear constraints require MATLAB R2013a
+% or later
+%
 % Output:
 %
 % b - N x IS matrix of coefficients .. each column gives
@@ -52,7 +71,7 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 %   >> [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 %    m,n,is,ia,alpha_init,opts)
 %
-% See also VARPRO_OPTS
+% See also VARPRO_OPTS, VARPRO_LSQLINOPTS, LSQLIN
 
 %
 % Copyright (c) 2017 Travis Askham
@@ -61,7 +80,7 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 %
 % References: 
 % - Extensions and Uses of the Variable Projection 
-% Algorith for Solving Nonlinear Least Squares Problems by 
+% Algorithm for Solving Nonlinear Least Squares Problems by 
 % G. H. Golub and R. J. LeVeque ARO Report 79-3, Proceedings 
 % of the 1979 Army Numerical Analsysis and Computers Conference
 % - "Variable projection for nonlinear least squares problems." 
@@ -74,24 +93,17 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 
 mode8str = ['stall detected: residual reduced by less than %e' ...
     ' times residual at previous step. iteration %d' ...
-    '. current residual %e'];
+    '. current residual %e\n'];
 mode4str = ['failed to find appropriate step length at iteration %d' ...
-    '. current residual %e'];
+    '. current residual %e\n'];
 mode1str = ['failed to reach tolerance after maxiter = %d' ...
-    ' iterations. current residual %e'];
+    ' iterations. current residual %e\n'];
 optstr1 = ['input opts must be a structure, see varpro_opts.m.' ...
-    ' Using default options ...'];
+    ' Using default options ...\n'];
     
 % set options, try to catch mistakes
 
 opts_default = varpro_opts();
-
-if (~isstruct(opts))
-    warning(optstr1);
-    opts = opts_default;
-end
-
-display('with MATLAB qr')
 
 lambda0 = varpro2_getfield(opts,opts_default,'lambda0');
 maxlam = varpro2_getfield(opts,opts_default,'maxlam');
@@ -102,6 +114,37 @@ maxiter = varpro2_getfield(opts,opts_default,'maxiter');
 tol = varpro2_getfield(opts,opts_default,'tol');
 eps_stall = varpro2_getfield(opts,opts_default,'eps_stall');
 iffulljac = varpro2_getfield(opts,opts_default,'iffulljac');
+ifprint = varpro2_getfield(opts,opts_default,'ifprint');
+ptf = varpro2_getfield(opts,opts_default,'ptf');
+
+if (~isstruct(opts))
+  if(ifprint == 1)
+    fprintf(optstr1);
+  end
+  opts = opts_default;
+end
+
+% if linear constraints are on, get them
+
+iflinconst = 0;
+
+if (nargin > 10 && ~isempty(varargin{1}))
+
+  iflinconst = 1;
+  
+  copts = varargin{1};
+  copts_default = varpro_lsqlinopts();
+
+  Ac = varpro2_getfield(copts,copts_default,'Ac');
+  bc = varpro2_getfield(copts,copts_default,'bc');
+  Ace = varpro2_getfield(copts,copts_default,'Ace');
+  bce = varpro2_getfield(copts,copts_default,'bce');
+  lbc = varpro2_getfield(copts,copts_default,'lbc');
+  ubc = varpro2_getfield(copts,copts_default,'ubc');
+  ifreal = varpro2_getfield(copts,copts_default,'ifreal');
+  lsqlinopts = varpro2_getfield(copts,copts_default,'lsqlinopts');
+  
+end			 
 
 % initialize values
 
@@ -111,6 +154,8 @@ djacmat = zeros(m*is,ia);
 err = zeros(maxiter,1);
 res_scale = norm(y,'fro');
 scales = zeros(ia,1);
+
+rjac = zeros(2*ia,ia);
 
 phimat = phi(alpha,t);
 [U,S,V] = svd(phimat,'econ');
@@ -127,169 +172,195 @@ errlast = norm(res,'fro')/res_scale;
 imode = 0;
 
 for iter = 1:maxiter
-    
-    % build jacobian matrix, looping over alpha indeces
-    
-    for j = 1:ia
-        dphitemp = dphi(alpha,t,j);
-        djaca = (dphitemp - sparse(U*(sparse(U'*dphitemp))))*b;
-        if (iffulljac == 1)
-            % use full expression for Jacobian
-            djacb = U*(S\(V'*(sparse(dphitemp'*res))));
-            djacmat(:,j) = -(djaca(:) + djacb(:));
-        else
-            % use approximate expression
-            djacmat(:,j) = -djaca(:);
-        end
-        % the scales give the "marquardt" part of the algo.
-        scales(j) = 1;
-        if (ifmarq == 1)
-            scales(j) = min(norm(djacmat(:,j)),1);
-            scales(j) = max(scales(j),1e-6);
-        end
+  
+		   % build jacobian matrix, looping over alpha indeces
+  
+  for j = 1:ia
+    dphitemp = dphi(alpha,t,j);
+    djaca = (dphitemp - sparse(U*(sparse(U'*dphitemp))))*b;
+    if (iffulljac == 1)
+				% use full expression for Jacobian
+      djacb = U*(S\(V'*(sparse(dphitemp'*res))));
+      djacmat(:,j) = (djaca(:) + djacb(:));
+    else
+				% use approximate expression
+      djacmat(:,j) = djaca(:);
     end
-    
-    % loop to determine lambda (lambda gives the "levenberg" part)
+		   % the scales give the "marquardt" part of the algo.
+    scales(j) = 1;
+    if (ifmarq == 1)
+      scales(j) = min(norm(djacmat(:,j)),1);
+      scales(j) = max(scales(j),1e-6);
+    end
+  end
+  
+	% loop to determine lambda (lambda gives the "levenberg" part)
 
-    % pre-compute components that don't depend on 
-    % step-size parameter (lambda)
+			% pre-compute components that don't depend on 
+			% step-size parameter (lambda)
+  
+		  % get pivots and lapack style qr for jacobian matrix
+  [q, rjac2, jpvt] = qr(djacmat,0);
+  rhstop = q'*res(:);
+  
+  ijpvt = 1:ia;
+  ijpvt(jpvt) = ijpvt;
+  rjac(1:ia,:) = triu(rjac2(1:ia,:));
+  scalespvt = scales(jpvt(1:ia)); % permute scales appropriately...
+  rhs = [rhstop(1:ia); zeros(ia,1)]; % transformed right hand side
+  
+		  % check if current step size or shrunk version works
+  
+				% get step
+
+  rjac(ia+1:2*ia,:) = lambda0*diag(scalespvt);
+
+  if (iflinconst == 1)
+    delta0 = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
+			    Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+  else
+    delta0 = rjac\rhs;
+  end
+  delta0 = delta0(ijpvt); % unscramble solution
+  
+				% new alpha guess
+  
+  alpha0 = alpha + delta0;
+  
+				% corresponding residual
+  
+  phimat = phi(alpha0,t);
+  b0 = phimat\y;
+  res0 = y-phimat*b0;
+  err0 = norm(res0,'fro')/res_scale;
+  
+				% check if this is an improvement
+  
+  if (err0 < errlast) % see if a smaller lambda is better
     
-    % get pivots and lapack style qr for jacobian matrix
+    lambda1 = lambda0/lamdown;
+    rjac(ia+1:2*ia,:) = lambda1*diag(scalespvt);
+    if (iflinconst == 1)
+      delta1 = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
+			      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+    else
+      delta1 = rjac\rhs;
+    end
+    delta1 = delta1(ijpvt); % unscramble solution      
+
+    alpha1 = alpha + delta1;
+    phimat = phi(alpha1,t);
+    b1 = phimat\y;
+    res1 = y-phimat*b1;
+    err1 = norm(res1,'fro')/res_scale;
     
-%     [djacout,jpvt,tau] = XGEQP3(djacmat);
-%     rjac = triu(djacout); % r from qr of jacobian
-%     rhstop = XORMQR('L','T',djacout,tau,res(:)); % Q'*res
+    if (err1 < err0)
+      lambda0 = lambda1;
+      alpha = alpha1;
+      errlast = err1;
+      b = b1;
+      res = res1;
+    else
+      alpha = alpha0;
+      errlast = err0;
+      b = b0;
+      res = res0;
+    end
+  else
+	% if not, increase lambda until something works
+	% this makes the algorithm more and more like gradient descent
     
-    [q, rjac, jpvt] = qr(djacmat,0);
-    rhstop = q'*res(:);
-    scalespvt = scales(jpvt(1:ia)); % permute scales appropriately...
-    rhs = [rhstop; zeros(ia,1)]; % transformed right hand side
-    
-    
-    % check if current step size or shrunk version works
-    
-    % get step
-    
-    delta0 = varpro2_solve_special(rjac,lambda0*diag(scalespvt),rhs);
-    delta0(jpvt(1:ia)) = delta0; % unscramble solution
-    
-    % new alpha guess
-    
-    alpha0 = alpha - delta0;
-    
-    % corresponding residual
-    
-    phimat = phi(alpha0,t);
-    b0 = phimat\y;
-    res0 = y-phimat*b0;
-    err0 = norm(res0,'fro')/res_scale;
-    
-    % check if this is an improvement
+    for j = 1:maxlam
+      
+      lambda0 = lambda0*lamup;
+      rjac(ia+1:2*ia,:) = lambda0*diag(scalespvt);
+      if (iflinconst == 1)
+	delta0 = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
+				Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+      else
+	delta0 = rjac\rhs;
+      end
+      delta0 = delta0(ijpvt); % unscramble solution
+      
+      alpha0 = alpha + delta0;
+
+      phimat = phi(alpha0,t);
+      b0 = phimat\y;
+      res0 = y-phimat*b0;
+      err0 = norm(res0,'fro')/res_scale;
+      
+      if (err0 < errlast) 
+        break
+      end
+
+    end
     
     if (err0 < errlast) 
-
-        % see if a smaller lambda is better
-        
-        lambda1 = lambda0/lamdown;
-        delta1 = varpro2_solve_special(rjac,lambda1*diag(scalespvt),rhs);
-        delta1(jpvt(1:ia)) = delta1; % unscramble solution
-
-        alpha1 = alpha - delta1;
-        phimat = phi(alpha1,t);
-        b1 = phimat\y;
-        res1 = y-phimat*b1;
-        err1 = norm(res1,'fro')/res_scale;
-        
-        if (err1 < err0)
-            lambda0 = lambda1;
-            alpha = alpha1;
-            errlast = err1;
-            b = b1;
-            res = res1;
-        else
-            alpha = alpha0;
-            errlast = err0;
-            b = b0;
-            res = res0;
-        end
+      alpha = alpha0;
+      errlast = err0;
+      b = b0;
+      res = res0;
     else
-    % if not, increase lambda until something works
-    % this makes the algorithm more and more like gradient descent
-    
-        for j = 1:maxlam
-        
-            lambda0 = lambda0*lamup;
-            delta0 = varpro2_solve_special(rjac,lambda0*diag(scalespvt),rhs);
-            delta0(jpvt(1:ia)) = delta0; % unscramble solution
-            
-            alpha0 = alpha - delta0;
+      
+				% no appropriate step length found
+      
+      niter = iter;
+      err(niter) = errlast;
+      imode = 4;
+      if (ifprint == 1)
+	fprintf(mode4str,iter,errlast);
+      end
+      return
+    end
+  end
+  
+  alphas(:,iter) = alpha;
+  
+  err(iter) = errlast;
 
-            phimat = phi(alpha0,t);
-            b0 = phimat\y;
-            res0 = y-phimat*b0;
-            err0 = norm(res0,'fro')/res_scale;
-            
-            if (err0 < errlast) 
-                break
-            end
-
-        end
-        
-        if (err0 < errlast) 
-            alpha = alpha0;
-            errlast = err0;
-            b = b0;
-            res = res0;
-        else
-            
-            % no appropriate step length found
-            
-            niter = iter;
-            err(niter) = errlast;
-            imode = 4;
-            warning(mode4str,iter,errlast);
-            return
-        end
+  if (ifprint == 1 && mod(iter,ptf) == 0)
+    fprintf('step %d err %e lambda %e\n',iter,errlast,lambda0)
+  end
+  
+  if (errlast < tol)
+    
+				% tolerance met
+    
+    niter = iter;
+    return;
+  end
+  
+  if (iter > 1)
+    if (err(iter-1)-err(iter) < eps_stall*err(iter-1))
+      
+				% stall detected
+      
+      niter = iter;
+      imode = 8;
+      if(ifprint == 1)
+	fprintf(mode8str,eps_stall,iter,errlast);
+      end
+      return;
     end
-    
-    alphas(:,iter) = alpha;
-    
-    err(iter) = errlast;
-    if (errlast < tol)
-        
-        % tolerance met
-        
-        niter = iter;
-        return;
-    end
-    
-    if (iter > 1)
-        if (err(iter-1)-err(iter) < eps_stall*err(iter-1))
-            
-            % stall detected
-            
-            niter = iter;
-            imode = 8;
-            warning(mode8str,eps_stall,iter,errlast);
-            return;
-        end
-    end
-    
-    phimat = phi(alpha,t);
-    [U,S,V] = svd(phimat,'econ');
-    sd = diag(S);
-    irank = sum(sd > tolrank*sd(1));
-    U = U(:,1:irank);
-    S = S(1:irank,1:irank);
-    V = V(:,1:irank);
-    
+  end
+  
+  phimat = phi(alpha,t);
+  [U,S,V] = svd(phimat,'econ');
+  sd = diag(S);
+  irank = sum(sd > tolrank*sd(1));
+  U = U(:,1:irank);
+  S = S(1:irank,1:irank);
+  V = V(:,1:irank);
+  
 end
 
-% failed to meet tolerance in maxiter steps
+			   % failed to meet tolerance in maxiter steps
 
 niter = maxiter;
 imode = 1;
-warning(mode1str,maxiter,errlast);
+if (ifprint == 1)
+  fprintf(mode1str,maxiter,errlast);
+end
 
 end
 
@@ -297,13 +368,13 @@ function out = varpro2_getfield(opts,opts_default,in)
 %VARPRO2_GETFIELD Get value of field from struct if it exists,
 % otherwise set to default value
 
-optstr2 = 'opts struct is missing %s field, using default';
-optstr3 = 'opts default struct is missing %s field! bomb';
+optstr2 = 'opts struct is missing %s field, using default\n';
+optstr3 = 'opts default struct is missing %s field! bomb\n';
 
 if (isfield(opts,in))
     out = opts.(in);
 else
-    warning(optstr2,in);
+    fprintf(optstr2,in);
     if (isfield(opts_default,in))
         out = opts_default.(in);
     else
@@ -313,46 +384,77 @@ end
 
 end
 
-function x = varpro2_solve_special(R,D,b)
-% VARPRO2_SOLVE_SPECIAL Solves a system of the form 
-% 
-%     [ R ] 
-%     [---] x = b   
-%     [ D ] 
-% 
-% Where R is upper triangular and D is 
-% diagonal, using orthogonal reflectors as 
-% described in:
-%
-% Gene H. Golub and V. Pereyra, 'The Differentiation of 
-%   Pseudo-inverses and Nonlinear Least Squares Problems 
-%   Whose Variables Separate,' SIAM J. Numer. Analysis 10, 
-%   413-432 (1973).
-%
-% Fill-in is reduced for such a system. This
-% routine does not pivot
-%
+function [delta,ier] = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
+				      Ace,bce,lbc,ubc,ifreal,opts)
 
-A = [R; D];
-[m,n] = size(R);
-[ma,na] = size(A);
-if (ma ~= length(b) || ma ~= m+n || na ~= n)
-    error('something went wrong')
+  ia = length(alpha);
+  jpvt =jpvt(1:ia);
+
+  ier = 0;
+  delta = zeros(size(alpha));
+  
+  if (ifreal == 1)
+
+    if (~isreal(alpha) || ~isreal(rjac) || ~isreal(rhs))
+      ier = 1;
+      return
+    end
+    
+    if (~isempty(Ac))
+      bc = bc-Ac*alpha;
+      Ac = Ac(:,jpvt);
+    end
+    
+    if (~isempty(Ace))
+      bce = bce-Ace*alphar;
+      Ace = Ace(:,jpvt);
+    end
+
+    if (~isempty(lbc))
+      lbc = lbc-alphar;
+      lbc = lbc(jpvt);
+    end
+    
+    if (~isempty(ubc))
+      ubc = ubc-alphar;
+      ubc = ubc(jpvt);
+    end
+
+    delta = lsqlin(rjac,rhs,Ac,bc,Ace,bce,lbc,ubc,[],opts);
+  else
+  
+    rjacr = [real(rjac), -imag(rjac); imag(rjac), real(rjac)];
+    rhsr = [real(rhs); imag(rhs)];
+    alphar = [real(alpha); imag(alpha)];
+
+    if (~isempty(Ac))
+      bc = bc-Ac*alphar;
+      Ac(:,1:ia) = Ac(:,jpvt);
+      Ac(:,ia+1:2*ia) = Ac(:,ia+jpvt);
+    end
+    
+    if (~isempty(Ace))
+      bce = bce-Ace*alphar;
+      Ace(:,1:ia) = Ace(:,jpvt);
+      Ace(:,ia+1:2*ia) = Ace(:,ia+jpvt);      
+    end
+
+    if (~isempty(lbc))
+      lbc = lbc-alphar;
+      lbc(1:ia) = lbc(jpvt);
+      lbc(ia+1:2*ia) = lbc(ia+jpvt);
+    end
+    
+    if (~isempty(ubc))
+      ubc = ubc-alphar;
+      ubc(1:ia) = ubc(jpvt);
+      ubc(ia+1:2*ia) = ubc(jpvt);
+    end
+
+    deltar = lsqlin(rjacr,rhsr,Ac,bc,Ace,bce,lbc,ubc,[],opts);
+    delta = deltar(1:end/2)+1i*deltar(end/2+1:end);
+
+  end
+    
 end
 
-for i = 1:n
-    ind = [i, m+1:m+i];
-    u = A(ind,i);
-    sigma =  norm(u);
-    beta = 1/(sigma*(sigma+abs(u(1))));
-    u(1) = sign(u(1))*(sigma+abs(u(1)));
-    A(ind,i:end) = A(ind,i:end)-beta*u*(u'*A(ind,i:end));
-    b(ind) = b(ind)-beta*u*(u'*b(ind));
-end
-
-RA = triu(A);
-RA = RA(1:n,1:n);
-
-x = RA\b(1:n);
-
-end
