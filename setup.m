@@ -5,23 +5,9 @@
 %% before running the scripts in the examples 
 %% folder
 
-% create bin folder if it doesn't exist
-
-if ~exist('./bin', 'dir')
-  mkdir('./bin');
-end
 
 % add appropriate folders to path
 
-addpath('./bin');
 addpath('./src');
 addpath('./examples');
-
-% compile mex binaries
-
-buildqrmex
-
-% test mex binaries
-
-testqrmex
 

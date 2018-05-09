@@ -1,5 +1,5 @@
 function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
-%OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data 
+%OPTDMD Wrapper of VARPRO2 for computing the optimized DMD of data
 %
 %   [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %
@@ -20,18 +20,28 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %   using trapezoidal rule approximation
 % varargin{3} - orthogonal basis for projection (if POD modes precomputed
 %   or a different basis desired)
+% varargin{4} - linear constraint options structure.
+%                       See varpro_lsqlinopts.m for details.
+%                       allows you to enforce linear constraints.
+% varargin{5} - gamma = tikhonov regularization term. if provided
+%                       the minimization problem becomes 
+%
+%                min  | y - phi*b |_F^2 + | gamma alpha |_2^2 
+%
+%               where gamma is either a scalar or matrix.      
+%
 %
 % Output:
 %
 % w - each column is a DMD mode
 % e - each entry e(i) is an eigenvalue corresponding to w(:,i)
 % b - the best fit coefficient of each DMD mode
-% varargout{1} - return projected system matrix 
+% varargout{1} - return projected system matrix
 %   A =  (u'*w)*diag(e)*(pinv(w)*u) where u is the first
 %   r POD modes or varargin{3}.
 % varargout{2} - return basis for projection
 % varargout{3} - return full system matrix A = w*diag(e)*pinv(w)
-% 
+%
 % X should be approximated by
 %
 % X ~ w*diag(b)*exp(e*t')
@@ -44,6 +54,7 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %   >> [w,e,b] = optdmd(xdata,ts,r,imode,opts,[],u);
 %   >> [w,e,b] = optdmd(xdata,ts,r,imode,[],e_init);
 %   >> [w,e,b,atilde,u,afull] = optdmd(X,t,r,imode);
+%   >> [w,e,b] = optdmd(xdata,ts,r,imode,[],e_init,[],copt);
 %
 % See also VARPRO_OPTS, VARPRO2
 
@@ -53,13 +64,12 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 % MIT License
 %
 
-if ((imode == 2 || nargout > 3 || nargin < 6 || isempty(varargin{2})) ...
-        && (nargin < 7) )
+if (imode == 2 || nargout > 3 || nargin < 6 || isempty(varargin{2}))
     [u,~,~] = svd(X,'econ');
     if (imode == 2)
         u = u(:,1:r);
     end
-elseif (nargin == 7)
+elseif (nargin >= 7 && ~isempty(varargin{3}))
     u = varargin{3};
 end
 
@@ -77,23 +87,23 @@ if (nargin < 6 || isempty(varargin{2}))
     ux1 = u'*X;
     ux2 = ux1(:,2:end);
     ux1 = ux1(:,1:end-1);
-
+    
     t1 = t(1:end-1);
     t2 = t(2:end);
     
     dx = (ux2-ux1)*diag(1./(t2-t1));
     xin = (ux1+ux2)/2;
-
+    
     [u1,s1,v1] = svd(xin,'econ');
-
+    
     u1 = u1(:,1:r);
     v1 = v1(:,1:r);
     s1 = s1(1:r,1:r);
-
+    
     atilde = u1'*dx*v1/s1;
-
+    
     alpha_init = eig(atilde);
-   
+    
     clear ux1 ux2 atilde t1 t2 dx xin
     
 else
@@ -101,6 +111,22 @@ else
     % use user provided initial guess
     
     alpha_init = varargin{2};
+end
+
+% check if linear constraints are supplied
+
+if (nargin < 8 || isempty(varargin{4}))
+    copts = [];
+else
+    copts = varargin{4};
+end
+
+% check if Tikhinov regularization is supplied
+
+if (nargin < 9 || isempty(varargin{5}))
+    gamma = [];
+else
+    gamma = varargin{5};
 end
 
 if (imode == 2)
@@ -112,7 +138,8 @@ if (imode == 2)
     ia = r;
     is = r;
     [w,e,~,~,~,~] = varpro2(transpose(u'*X),t, ...
-        @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init,opts);
+            @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init, ...
+            opts,copts,gamma);
     
     w = transpose(w);
     
@@ -137,16 +164,18 @@ else
     [is,~] = size(X);
     ia = r;
     n = r;
+    
     [w,e,~,~,~,~] = varpro2(transpose(X),t, ...
-        @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init,opts);
+        @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init, ...
+        opts,copts,gamma);
     
     w = transpose(w);
-
+    
     % normalize
-
+    
     b = sqrt(sum(abs(w).^2,1))';
     w = w*diag(1./b);
-
+    
     if (nargout > 3)
         wproj = u'*w;
         varargout{1} = wproj*diag(e)*pinv(wproj); %projected propagator
@@ -166,6 +195,6 @@ end
 if (nargout > 5)
     varargout{3} = w*diag(e)*pinv(w);
 end
-        
-        
+
+
 

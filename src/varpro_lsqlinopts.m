@@ -106,7 +106,7 @@ opts.Ace = [];
 opts.bce = [];
 opts.lbc = [];
 opts.ubc = [];
-opts.lsqlinopts = optimoptions('lsqlin','Algorithm',...,
+opts.lsqlinopts = optimoptions('lsqlin','Algorithm',...
 			       'interior-point','Display','none');
 
 % check if input comes in pairs

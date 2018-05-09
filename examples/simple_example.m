@@ -39,15 +39,15 @@ ts = linspace(t0,t1,nt);
 
 % eigenvalues
 
-e1 = 1;
-e2 = -2;
-e3 = 1i;
+e_1 = 1;
+e_2 = -2;
+e_3 = 1i;
 
-evals = [e1;e2;e3];
+evals = [e_1;e_2;e_3];
 
 % create clean dynamics
 
-xclean = f1'*exp(e1*ts) + f2'*exp(e2*ts) + f3'*exp(e3*ts);
+xclean = f1'*exp(e_1*ts) + f2'*exp(e_2*ts) + f3'*exp(e_3*ts);
 
 % add noise (just a little ... this problem is 
 % actually pretty challenging)
@@ -64,16 +64,16 @@ r = 3;
 % 1 --- fit to unprojected data
 
 imode = 1;
-[w,e,b] = optdmd(xdata,ts,r,imode);
+[w,e1,b] = optdmd(xdata,ts,r,imode);
 
 % reconstructed values
-x1 = w*diag(b)*exp(e*ts);
+x1 = w*diag(b)*exp(e1*ts);
 relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
 relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
 
 % compare to actual eigenvalues
-indices = match_vectors(e,evals);
-relerr_e = norm(e(indices)-evals)/norm(evals);
+indices = match_vectors(e1,evals);
+relerr_e = norm(e1(indices)-evals)/norm(evals);
 
 fprintf('example 1 --- fitting unprojected data\n')
 fprintf('relative error in reconstruction %e\n',relerr_r)
@@ -84,16 +84,16 @@ fprintf('relative error of eigenvalues %e\n',relerr_e)
 % pod modes)
 
 imode = 2;
-[w,e,b] = optdmd(xdata,ts,r,imode);
+[w,e2,b] = optdmd(xdata,ts,r,imode);
 
 % reconstructed values
-x1 = w*diag(b)*exp(e*ts);
+x1 = w*diag(b)*exp(e2*ts);
 relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
 relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
 
 % compare to actual eigenvalues
-indices = match_vectors(e,evals);
-relerr_e = norm(e(indices)-evals)/norm(evals);
+indices = match_vectors(e2,evals);
+relerr_e = norm(e2(indices)-evals)/norm(evals);
 
 fprintf('example 2 --- fitting data projected by optdmd on POD modes\n')
 fprintf('relative error in reconstruction %e\n',relerr_r)
@@ -117,16 +117,16 @@ opts = varpro_opts('maxiter',maxiter,'tol',tol,'eps_stall',eps_stall);
 [u,~,~] = randsvd2(xdata,r,3);
 
 imode = 2;
-[w,e,b] = optdmd(xdata,ts,r,imode,opts,[],u);
+[w,e3,b] = optdmd(xdata,ts,r,imode,opts,[],u);
 
 % reconstructed values
-x1 = w*diag(b)*exp(e*ts);
+x1 = w*diag(b)*exp(e3*ts);
 relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
 relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
 
 % compare to actual eigenvalues
-indices = match_vectors(e,evals);
-relerr_e = norm(e(indices)-evals)/norm(evals);
+indices = match_vectors(e3,evals);
+relerr_e = norm(e3(indices)-evals)/norm(evals);
 
 fprintf('example 3 --- fitting data projected on POD modes from randsvd2\n')
 fprintf('relative error in reconstruction %e\n',relerr_r)
@@ -140,19 +140,95 @@ fprintf('relative error of eigenvalues %e\n',relerr_e)
 e_init = randn(3,1);
 
 imode = 2;
-[w,e,b] = optdmd(xdata,ts,r,imode,[],e_init);
+[w,e4,b] = optdmd(xdata,ts,r,imode,[],e_init);
 
 % reconstructed values
-x1 = w*diag(b)*exp(e*ts);
+x1 = w*diag(b)*exp(e4*ts);
 relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
 relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
 
 % compare to actual eigenvalues
-indices = match_vectors(e,evals);
-relerr_e = norm(e(indices)-evals)/norm(evals);
+indices = match_vectors(e4,evals);
+relerr_e = norm(e4(indices)-evals)/norm(evals);
 
 fprintf('example 4 --- using your own initial guess\n')
 fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
+
+% 5 -- add linear constraints
+
+% set a random initial guess (not generally a good idea)
+
+e_init = randn(3,1);
+
+% bounds 
+
+% note that the first ia bounds apply to the real part of
+% alpha and the second ia bounds apply to the imaginary part
+% For unbounded, use the appropriate choice of +/- Inf
+
+% the below has the effect of constraining the alphas to the
+% left half plane
+
+lbc = [-Inf*ones(size(e_init)); -Inf*ones(size(e_init))];
+ubc = [zeros(size(e_init)); Inf*ones(size(e_init))];
+
+copts = varpro_lsqlinopts('lbc',lbc,'ubc',ubc);
+
+imode = 2;
+[w,e5,b] = optdmd(xdata,ts,r,imode,[],e_init,[],copts);
+
+% reconstructed values
+x1 = w*diag(b)*exp(e5*ts);
+relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
+relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
+
+% compare to actual eigenvalues
+indices = match_vectors(e5,evals);
+relerr_e = norm(e5(indices)-evals)/norm(evals);
+
+fprintf('example 5 --- alphas restricted to left-half plane\n')
+fprintf('relative error in reconstruction %e\n',relerr_r)
+fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
+fprintf('relative error of eigenvalues %e\n',relerr_e)
+
+% 6 -- add Tikhinov regularization
+
+% set a random initial guess (not generally a good idea)
+
+e_init = randn(3,1);
+
+% tikhinov regularization parameter
+gamma = 0.05;
+
+imode = 2;
+[w,e6,b] = optdmd(xdata,ts,r,imode,[],e_init,[],[],gamma);
+
+% reconstructed values
+x1 = w*diag(b)*exp(e6*ts);
+relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
+relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
+
+% compare to actual eigenvalues
+indices = match_vectors(e6,evals);
+relerr_e = norm(e6(indices)-evals)/norm(evals);
+
+fprintf('example 6 --- alphas with Tikhinov regularization\n')
+fprintf('relative error in reconstruction %e\n',relerr_r)
+fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
+fprintf('relative error of eigenvalues %e\n',relerr_e)
+
+% 7 -- show constrained vs regularized vs optimal
+
+figure()
+set(groot, 'defaultLineMarkerSize',15)
+scatter(real(evals),imag(evals),'bo')
+hold on
+scatter(real(e4),imag(e4),'rd')
+scatter(real(e5),imag(e5),'k+')
+scatter(real(e6),imag(e6),'mx')
+legend({'true eigenvalues','opt dmd','opt dmd + constraint',...
+    'opt dmd w/ regularizer'},'Location','NorthWest')
+title('compare eigenvalues')
 

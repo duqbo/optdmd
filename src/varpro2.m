@@ -36,7 +36,6 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 % varargin{1} = copts - linear constraint options structure.
 %                       See varpro_lsqlinopts.m for details.
 %                       allows you to enforce linear constraints.
-%              
 %
 % the constrained version uses lsqlin from the optimization
 % toolbox. the bounds enforced are
@@ -51,6 +50,14 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 %
 % NOTE: Linear constraints require MATLAB R2013a
 % or later
+% 
+% varargin{2} = gamma - tikhonov regularization term. if provided
+%                       the minimization problem becomes 
+%
+%                min  | y - phi*b |_F^2 + | gamma alpha |_2^2 
+%
+%               where gamma is either a scalar or matrix.      
+%
 %
 % Output:
 %
@@ -74,7 +81,7 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 % See also VARPRO_OPTS, VARPRO_LSQLINOPTS, LSQLIN
 
 %
-% Copyright (c) 2017 Travis Askham
+% Copyright (c) 2018 Travis Askham
 %
 % Available under the MIT license
 %
@@ -144,13 +151,50 @@ if (nargin > 10 && ~isempty(varargin{1}))
   ifreal = varpro2_getfield(copts,copts_default,'ifreal');
   lsqlinopts = varpro2_getfield(copts,copts_default,'lsqlinopts');
   
-end			 
+  % force initial guess inside
+  jpvt = 1:length(alpha_init);
+  %[delta,ier] = varpro2_lsqlin(eye(length(alpha_init)),alpha_init, ...
+  %    alpha_init,jpvt,Ac,bc,Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+  %alpha_init = alpha_init+delta;
+    %  ier
+  alpha_init = varpro2_lsqlin_prox(alpha_init,jpvt,Ac,bc, ...
+        Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+  
+end	
+
+% if Tikhonov regularization is on, get it		 
+
+if (nargin > 11 && ~isempty(varargin{2}))
+
+  iftik = 1;
+
+  gamma =  varargin{2};
+  [mg,ng] = size(gamma);
+
+  if (mg == 1 && ng == 1)
+    gamma = gamma*eye(ia);
+  elseif (mg ~= ia || ng ~= ia)
+    error('Tikhonov regularization matrix of incorrect size');
+    return
+  end
+  
+else
+    iftik = 0;
+    gamma = zeros(ia);
+end
+
 
 % initialize values
 
 alpha = alpha_init;
 alphas = zeros(length(alpha),maxiter);
-djacmat = zeros(m*is,ia);
+if (iftik == 1)
+  djacmat = zeros(m*is+ia,ia);
+  rhstemp = zeros(m*is+ia,1);
+else
+  djacmat = zeros(m*is,ia);
+  rhstemp = zeros(m*is,1);
+end
 err = zeros(maxiter,1);
 res_scale = norm(y,'fro');
 scales = zeros(ia,1);
@@ -167,7 +211,7 @@ S = S(1:irank,1:irank);
 V = V(:,1:irank);
 b = phimat\y;
 res = y - phimat*b;
-errlast = norm(res,'fro')/res_scale;
+errlast = sqrt(norm(res,'fro')^2 + norm(gamma*alpha)^2)/res_scale;
 
 imode = 0;
 
@@ -181,19 +225,23 @@ for iter = 1:maxiter
     if (iffulljac == 1)
 				% use full expression for Jacobian
       djacb = U*(S\(V'*(sparse(dphitemp'*res))));
-      djacmat(:,j) = (djaca(:) + djacb(:));
+      djacmat(1:m*is,j) = (djaca(:) + djacb(:));
     else
 				% use approximate expression
-      djacmat(:,j) = djaca(:);
+      djacmat(1:m*is,j) = djaca(:);
     end
 		   % the scales give the "marquardt" part of the algo.
     scales(j) = 1;
     if (ifmarq == 1)
-      scales(j) = min(norm(djacmat(:,j)),1);
+      scales(j) = min(norm(djacmat(1:m*is,j)),1);
       scales(j) = max(scales(j),1e-6);
     end
   end
-  
+
+  if (iftik == 1)
+     djacmat(m*is+1:end,:) = gamma;
+  end
+
 	% loop to determine lambda (lambda gives the "levenberg" part)
 
 			% pre-compute components that don't depend on 
@@ -201,11 +249,17 @@ for iter = 1:maxiter
   
 		  % get pivots and lapack style qr for jacobian matrix
   
-  [djacout,jpvt,tau] = xgeqp3_m(djacmat);
+  [qout,djacout,jpvt] = qr(djacmat,0);
+  %[djacout,jpvt,tau] = xgeqp3_m(djacmat);
   ijpvt = 1:ia;
   ijpvt(jpvt) = ijpvt;
   rjac(1:ia,:) = triu(djacout(1:ia,:));
-  rhstop = xormqr_m('L','T',djacout,tau,res(:)); % Q'*res
+  rhstemp(1:m*is) = res(:);
+  if (iftik == 1)
+     rhstemp(m*is+1:end) = -gamma*alpha;
+  end
+  %rhstop = xormqr_m('L','T',djacout,tau,rhstemp); % Q'*res
+  rhstop = qout'*rhstemp;
   scalespvt = scales(jpvt(1:ia)); % permute scales appropriately...
   rhs = [rhstop(1:ia); zeros(ia,1)]; % transformed right hand side
   
@@ -215,24 +269,22 @@ for iter = 1:maxiter
 
   rjac(ia+1:2*ia,:) = lambda0*diag(scalespvt);
 
-  if (iflinconst == 1)
-    delta0 = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
-			    Ace,bce,lbc,ubc,ifreal,lsqlinopts);
-  else
-    delta0 = rjac\rhs;
-  end
+  delta0 = rjac\rhs;
   delta0 = delta0(ijpvt); % unscramble solution
   
 				% new alpha guess
   
   alpha0 = alpha + delta0;
-  
+  if (iflinconst == 1)
+      alpha0 = varpro2_lsqlin_prox(alpha0,jpvt,Ac,bc, ...
+				      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+  end
 				% corresponding residual
   
   phimat = phi(alpha0,t);
   b0 = phimat\y;
   res0 = y-phimat*b0;
-  err0 = norm(res0,'fro')/res_scale;
+  err0 = sqrt(norm(res0,'fro')^2 + norm(gamma*alpha0)^2)/res_scale;
   
 				% check if this is an improvement
   
@@ -240,19 +292,19 @@ for iter = 1:maxiter
     
     lambda1 = lambda0/lamdown;
     rjac(ia+1:2*ia,:) = lambda1*diag(scalespvt);
-    if (iflinconst == 1)
-      delta1 = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
-			      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
-    else
-      delta1 = rjac\rhs;
-    end
+    delta1 = rjac\rhs;
     delta1 = delta1(ijpvt); % unscramble solution      
 
     alpha1 = alpha + delta1;
+    if (iflinconst == 1)
+        alpha1 = varpro2_lsqlin_prox(alpha1,jpvt,Ac,bc, ...
+				      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+    end
+
     phimat = phi(alpha1,t);
     b1 = phimat\y;
     res1 = y-phimat*b1;
-    err1 = norm(res1,'fro')/res_scale;
+    err1 = sqrt(norm(res1,'fro')^2+norm(gamma*alpha1)^2)/res_scale;
     
     if (err1 < err0)
       lambda0 = lambda1;
@@ -274,20 +326,21 @@ for iter = 1:maxiter
       
       lambda0 = lambda0*lamup;
       rjac(ia+1:2*ia,:) = lambda0*diag(scalespvt);
-      if (iflinconst == 1)
-	delta0 = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
-				Ace,bce,lbc,ubc,ifreal,lsqlinopts);
-      else
-	delta0 = rjac\rhs;
-      end
+
+      delta0 = rjac\rhs;
       delta0 = delta0(ijpvt); % unscramble solution
       
       alpha0 = alpha + delta0;
+      if (iflinconst == 1)
+        alpha0 = varpro2_lsqlin_prox(alpha0,jpvt,Ac,bc, ...
+    				      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+      end
+
 
       phimat = phi(alpha0,t);
       b0 = phimat\y;
       res0 = y-phimat*b0;
-      err0 = norm(res0,'fro')/res_scale;
+      err0 = sqrt(norm(res0,'fro')^2+norm(gamma*alpha0)^2)/res_scale;
       
       if (err0 < errlast) 
         break
@@ -406,17 +459,17 @@ function [delta,ier] = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
     end
     
     if (~isempty(Ace))
-      bce = bce-Ace*alphar;
+      bce = bce-Ace*alpha;
       Ace = Ace(:,jpvt);
     end
 
     if (~isempty(lbc))
-      lbc = lbc-alphar;
+      lbc = lbc-alpha;
       lbc = lbc(jpvt);
     end
     
     if (~isempty(ubc))
-      ubc = ubc-alphar;
+      ubc = ubc-alpha;
       ubc = ubc(jpvt);
     end
 
@@ -448,11 +501,79 @@ function [delta,ier] = varpro2_lsqlin(rjac,rhs,alpha,jpvt,Ac,bc, ...
     if (~isempty(ubc))
       ubc = ubc-alphar;
       ubc(1:ia) = ubc(jpvt);
-      ubc(ia+1:2*ia) = ubc(jpvt);
+      ubc(ia+1:2*ia) = ubc(ia+jpvt);
     end
-
+    
     deltar = lsqlin(rjacr,rhsr,Ac,bc,Ace,bce,lbc,ubc,[],opts);
     delta = deltar(1:end/2)+1i*deltar(end/2+1:end);
+
+  end
+    
+end
+
+function [alphanew,ier] = varpro2_lsqlin_prox(alpha,jpvt,Ac,bc, ...
+				      Ace,bce,lbc,ubc,ifreal,opts)
+
+  ia = length(alpha);
+  jpvt =jpvt(1:ia);
+
+  ier = 0;
+  alphanew = alpha;
+  
+  if (ifreal == 1)
+
+    if (~isreal(alpha) || ~isreal(rjac) || ~isreal(rhs))
+      ier = 1;
+      return
+    end
+    
+    if (~isempty(Ac))
+      Ac = Ac(:,jpvt);
+    end
+    
+    if (~isempty(Ace))
+      Ace = Ace(:,jpvt);
+    end
+
+    if (~isempty(lbc))
+      lbc = lbc(jpvt);
+    end
+    
+    if (~isempty(ubc))
+      ubc = ubc(jpvt);
+    end
+
+    mat = eye(ia);
+    
+    alphanew = lsqlin(mat,alpha,Ac,bc,Ace,bce,lbc,ubc,[],opts);
+  else
+  
+    alphar = [real(alpha); imag(alpha)];
+    ia2 = 2*ia;
+    mat = eye(ia2);
+    
+    if (~isempty(Ac))
+      Ac(:,1:ia) = Ac(:,jpvt);
+      Ac(:,ia+1:2*ia) = Ac(:,ia+jpvt);
+    end
+    
+    if (~isempty(Ace))
+      Ace(:,1:ia) = Ace(:,jpvt);
+      Ace(:,ia+1:2*ia) = Ace(:,ia+jpvt);      
+    end
+
+    if (~isempty(lbc))
+      lbc(1:ia) = lbc(jpvt);
+      lbc(ia+1:2*ia) = lbc(ia+jpvt);
+    end
+    
+    if (~isempty(ubc))
+      ubc(1:ia) = ubc(jpvt);
+      ubc(ia+1:2*ia) = ubc(ia+jpvt);
+    end
+    
+    alphanewr = lsqlin(mat,alphar,Ac,bc,Ace,bce,lbc,ubc,[],opts);
+    alphanew= alphanewr(1:end/2)+1i*alphanewr(end/2+1:end);
 
   end
     
