@@ -28,7 +28,12 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %
 %                min  | y - phi*b |_F^2 + | gamma alpha |_2^2 
 %
-%               where gamma is either a scalar or matrix.      
+%               where gamma is either a scalar or matrix.  
+%
+% varargin{3} = prox - proximal operator to be applied to the 
+%                      vector alpha at each step (e.g. projection
+%                      onto a set). For now, this overrides the 
+%                      lsqlin options in varargin{4}.
 %
 %
 % Output:
@@ -129,6 +134,14 @@ else
     gamma = varargin{5};
 end
 
+% check if proxfun is supplied 
+
+if (nargin < 10 || isempty(varargin{6}))
+    proxfun = [];
+else
+    proxfun = varargin{6};
+end
+
 if (imode == 2)
     
     % projected version
@@ -139,7 +152,7 @@ if (imode == 2)
     is = r;
     [w,e,~,~,~,~] = varpro2(transpose(u'*X),t, ...
             @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init, ...
-            opts,copts,gamma);
+            opts,copts,gamma,proxfun);
     
     w = transpose(w);
     
@@ -167,7 +180,7 @@ else
     
     [w,e,~,~,~,~] = varpro2(transpose(X),t, ...
         @varpro2expfun,@varpro2dexpfun,m,n,is,ia,alpha_init, ...
-        opts,copts,gamma);
+        opts,copts,gamma,proxfun);
     
     w = transpose(w);
     

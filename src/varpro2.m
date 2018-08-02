@@ -36,6 +36,8 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 % varargin{1} = copts - linear constraint options structure.
 %                       See varpro_lsqlinopts.m for details.
 %                       allows you to enforce linear constraints.
+%                       (these are treated as a projection
+%                       operator applied at each step)
 %
 % the constrained version uses lsqlin from the optimization
 % toolbox. the bounds enforced are
@@ -57,6 +59,10 @@ function [b,alpha,niter,err,imode,alphas] = varpro2(y,t,phi,dphi, ...
 %                min  | y - phi*b |_F^2 + | gamma alpha |_2^2 
 %
 %               where gamma is either a scalar or matrix.      
+%
+% varargin{3} = prox - proximal operator to be applied to the 
+%                      vector alpha at each step (e.g. projection
+%                      onto a set).
 %
 %
 % Output:
@@ -157,8 +163,9 @@ if (nargin > 10 && ~isempty(varargin{1}))
   %    alpha_init,jpvt,Ac,bc,Ace,bce,lbc,ubc,ifreal,lsqlinopts);
   %alpha_init = alpha_init+delta;
     %  ier
-  alpha_init = varpro2_lsqlin_prox(alpha_init,jpvt,Ac,bc, ...
+  proxfun = @(alpha) varpro2_lsqlin_prox(alpha,jpvt,Ac,bc, ...
         Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+  alpha_init = proxfun(alpha_init);
   
 end	
 
@@ -175,7 +182,6 @@ if (nargin > 11 && ~isempty(varargin{2}))
     gamma = gamma*eye(ia);
   elseif (mg ~= ia || ng ~= ia)
     error('Tikhonov regularization matrix of incorrect size');
-    return
   end
   
 else
@@ -183,6 +189,10 @@ else
     gamma = zeros(ia);
 end
 
+if (nargin > 12 && ~isempty(varargin{3}))
+    proxfun = varargin{3};
+    alpha_init = proxfun(alpha_init);
+end
 
 % initialize values
 
@@ -276,8 +286,7 @@ for iter = 1:maxiter
   
   alpha0 = alpha + delta0;
   if (iflinconst == 1)
-      alpha0 = varpro2_lsqlin_prox(alpha0,jpvt,Ac,bc, ...
-				      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+      alpha0 = proxfun(alpha0);
   end
 				% corresponding residual
   
@@ -297,8 +306,7 @@ for iter = 1:maxiter
 
     alpha1 = alpha + delta1;
     if (iflinconst == 1)
-        alpha1 = varpro2_lsqlin_prox(alpha1,jpvt,Ac,bc, ...
-				      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+        alpha1 = proxfun(alpha1);
     end
 
     phimat = phi(alpha1,t);
@@ -332,8 +340,7 @@ for iter = 1:maxiter
       
       alpha0 = alpha + delta0;
       if (iflinconst == 1)
-        alpha0 = varpro2_lsqlin_prox(alpha0,jpvt,Ac,bc, ...
-    				      Ace,bce,lbc,ubc,ifreal,lsqlinopts);
+        alpha0 = proxfun(alpha0);
       end
 
 
