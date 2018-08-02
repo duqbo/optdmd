@@ -219,6 +219,35 @@ fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
+% 7 -- add proximal operator
+
+% set a random initial guess (not generally a good idea)
+
+e_init = randn(3,1) + 1i*randn(3,1);
+
+% the below has the effect of constraining the alphas to the
+% left half plane (like the linear constraints above)
+
+proxfun = @(alpha) min(real(alpha),0) + 1i*imag(alpha);
+
+imode = 2;
+[w,e7,b] = optdmd(xdata,ts,r,imode,[],e_init,[],[],[],proxfun);
+
+% reconstructed values
+x1 = w*diag(b)*exp(e7*ts);
+relerr_r = norm(x1-xdata,'fro')/norm(xdata,'fro');
+relerr_r_clean = norm(x1-xclean,'fro')/norm(xclean,'fro');
+
+% compare to actual eigenvalues
+indices = match_vectors(e7,evals);
+relerr_e = norm(e7(indices)-evals)/norm(evals);
+
+fprintf('example 7 --- alphas restricted to left-half plane w/ prox\n')
+fprintf('relative error in reconstruction %e\n',relerr_r)
+fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
+fprintf('relative error of eigenvalues %e\n',relerr_e)
+
+
 % 7 -- show constrained vs regularized vs optimal
 
 figure()

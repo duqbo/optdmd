@@ -139,11 +139,11 @@ end
 
 % if linear constraints are on, get them
 
-iflinconst = 0;
+ifproxfun = 0;
 
 if (nargin > 10 && ~isempty(varargin{1}))
 
-  iflinconst = 1;
+  ifproxfun = 1;
   
   copts = varargin{1};
   copts_default = varpro_lsqlinopts();
@@ -190,6 +190,7 @@ else
 end
 
 if (nargin > 12 && ~isempty(varargin{3}))
+    ifproxfun = 1;
     proxfun = varargin{3};
     alpha_init = proxfun(alpha_init);
 end
@@ -285,7 +286,7 @@ for iter = 1:maxiter
 				% new alpha guess
   
   alpha0 = alpha + delta0;
-  if (iflinconst == 1)
+  if (ifproxfun == 1)
       alpha0 = proxfun(alpha0);
   end
 				% corresponding residual
@@ -305,7 +306,7 @@ for iter = 1:maxiter
     delta1 = delta1(ijpvt); % unscramble solution      
 
     alpha1 = alpha + delta1;
-    if (iflinconst == 1)
+    if (ifproxfun== 1)
         alpha1 = proxfun(alpha1);
     end
 
@@ -339,7 +340,7 @@ for iter = 1:maxiter
       delta0 = delta0(ijpvt); % unscramble solution
       
       alpha0 = alpha + delta0;
-      if (iflinconst == 1)
+      if (ifproxfun== 1)
         alpha0 = proxfun(alpha0);
       end
 

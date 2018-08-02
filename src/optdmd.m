@@ -30,7 +30,7 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 %
 %               where gamma is either a scalar or matrix.  
 %
-% varargin{3} = prox - proximal operator to be applied to the 
+% varargin{6} = prox - proximal operator to be applied to the 
 %                      vector alpha at each step (e.g. projection
 %                      onto a set). For now, this overrides the 
 %                      lsqlin options in varargin{4}.
