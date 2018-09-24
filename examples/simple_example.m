@@ -248,7 +248,7 @@ fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
 
-% 7 -- show constrained vs regularized vs optimal
+% 8 -- show constrained vs regularized vs optimal
 
 figure()
 set(groot, 'defaultLineMarkerSize',15)

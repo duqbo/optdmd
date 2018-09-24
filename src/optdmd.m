@@ -69,13 +69,13 @@ function [w,e,b,varargout] = optdmd(X,t,r,imode,varargin)
 % MIT License
 %
 
-if (imode == 2 || nargout > 3 || nargin < 6 || isempty(varargin{2}))
+if (nargin >= 7 && ~isempty(varargin{3}))
+    u = varargin{3};
+elseif ( imode==2 || nargout > 3 || nargin < 6 || isempty(varargin{2}) )
     [u,~,~] = svd(X,'econ');
     if (imode == 2)
         u = u(:,1:r);
     end
-elseif (nargin >= 7 && ~isempty(varargin{3}))
-    u = varargin{3};
 end
 
 if (nargin < 5 || isempty(varargin{1}))
