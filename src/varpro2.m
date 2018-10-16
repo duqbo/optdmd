@@ -222,7 +222,7 @@ S = S(1:irank,1:irank);
 V = V(:,1:irank);
 b = phimat\y;
 res = y - phimat*b;
-errlast = sqrt(norm(res,'fro')^2 + norm(gamma*alpha)^2)/res_scale;
+errlast = 0.5*(norm(res,'fro')^2 + norm(gamma*alpha)^2);
 
 imode = 0;
 
@@ -259,16 +259,18 @@ for iter = 1:maxiter
 			% step-size parameter (lambda)
   
 		  % get pivots and lapack style qr for jacobian matrix
+  rhstemp(1:m*is) = res(:);
+  if (iftik == 1)
+     rhstemp(m*is+1:end) = -gamma*alpha;
+  end
+
+  g = djacmat'*rhstemp;
   
   [qout,djacout,jpvt] = qr(djacmat,0);
   %[djacout,jpvt,tau] = xgeqp3_m(djacmat);
   ijpvt = 1:ia;
   ijpvt(jpvt) = ijpvt;
   rjac(1:ia,:) = triu(djacout(1:ia,:));
-  rhstemp(1:m*is) = res(:);
-  if (iftik == 1)
-     rhstemp(m*is+1:end) = -gamma*alpha;
-  end
   %rhstop = xormqr_m('L','T',djacout,tau,rhstemp); % Q'*res
   rhstop = qout'*rhstemp;
   scalespvt = scales(jpvt(1:ia)); % permute scales appropriately...
@@ -285,48 +287,74 @@ for iter = 1:maxiter
   
 				% new alpha guess
   
-  alpha0 = alpha + delta0;
   if (ifproxfun == 1)
-      alpha0 = proxfun(alpha0);
+    alpha0 = proxfun(alpha + delta0);
+    delta0 = alpha0-alpha; % update delta0
+  else
+    alpha0 = alpha + delta0;
+    
   end
 				% corresponding residual
   
   phimat = phi(alpha0,t);
   b0 = phimat\y;
   res0 = y-phimat*b0;
-  err0 = sqrt(norm(res0,'fro')^2 + norm(gamma*alpha0)^2)/res_scale;
+  err0 = 0.5*(norm(res0,'fro')^2 + norm(gamma*alpha0)^2);
   
-				% check if this is an improvement
+				% new update rule: check
+			 % predicted improvement vs actual improvement
+  act_impr = errlast-err0;
+  pred_impr = real(0.5*delta0'*(g));
+  impr_rat = act_impr/pred_impr;
   
-  if (err0 < errlast) % see if a smaller lambda is better
-    
-    lambda1 = lambda0/lamdown;
-    rjac(ia+1:2*ia,:) = lambda1*diag(scalespvt);
-    delta1 = rjac\rhs;
-    delta1 = delta1(ijpvt); % unscramble solution      
+  if (err0 < errlast)
 
-    alpha1 = alpha + delta1;
-    if (ifproxfun== 1)
+				% old version
+    				% see if a smaller lambda is better
+
+    if (ifproxfun==1)
+    
+      lambda1 = lambda0/lamdown;
+      rjac(ia+1:2*ia,:) = lambda1*diag(scalespvt);
+      delta1 = rjac\rhs;
+      delta1 = delta1(ijpvt); % unscramble solution      
+
+      alpha1 = alpha + delta1;
+      if (ifproxfun== 1)
         alpha1 = proxfun(alpha1);
-    end
+      end
 
-    phimat = phi(alpha1,t);
-    b1 = phimat\y;
-    res1 = y-phimat*b1;
-    err1 = sqrt(norm(res1,'fro')^2+norm(gamma*alpha1)^2)/res_scale;
-    
-    if (err1 < err0)
-      lambda0 = lambda1;
-      alpha = alpha1;
-      errlast = err1;
-      b = b1;
-      res = res1;
+      phimat = phi(alpha1,t);
+      b1 = phimat\y;
+      res1 = y-phimat*b1;
+      err1 = 0.5*(norm(res1,'fro')^2+norm(gamma*alpha1)^2);
+      
+      if (err1 < err0)
+	lambda0 = lambda1;
+	alpha = alpha1;
+	errlast = err1;
+	b = b1;
+	res = res1;
+      else
+	alpha = alpha0;
+	errlast = err0;
+	b = b0;
+	res = res0;
+      end
+
     else
+
+				% new version
+				% rescale lambda based on
+				% actual vs pred improvement
+      
+      lambda0 = lambda0*max(1.0/3.0,1-(2*impr_rat-1)^3);
       alpha = alpha0;
       errlast = err0;
       b = b0;
       res = res0;
     end
+    
   else
 	% if not, increase lambda until something works
 	% this makes the algorithm more and more like gradient descent
@@ -348,7 +376,7 @@ for iter = 1:maxiter
       phimat = phi(alpha0,t);
       b0 = phimat\y;
       res0 = y-phimat*b0;
-      err0 = sqrt(norm(res0,'fro')^2+norm(gamma*alpha0)^2)/res_scale;
+      err0 = 0.5*(norm(res0,'fro')^2+norm(gamma*alpha0)^2);
       
       if (err0 < errlast) 
         break

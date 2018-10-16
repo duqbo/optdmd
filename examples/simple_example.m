@@ -100,7 +100,7 @@ fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
-% 3 -- fit to projected data (basis computed 
+%% 3 -- fit to projected data (basis computed 
 % using randomized methods)
 
 % let's set some optimization parameters
@@ -133,7 +133,7 @@ fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
-% 4 -- use your own initial guess
+%% 4 -- use your own initial guess
 
 % set a random initial guess (not generally a good idea)
 
@@ -156,10 +156,11 @@ fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
-% 5 -- add linear constraints
+%% 5 -- add linear constraints
 
 % set a random initial guess (not generally a good idea)
-
+iseed = 8675309;
+rng(iseed);
 e_init = randn(3,1);
 
 % bounds 
@@ -193,10 +194,11 @@ fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
-% 6 -- add Tikhinov regularization
+%% 6 -- add Tikhinov regularization
 
 % set a random initial guess (not generally a good idea)
-
+iseed = 8675309;
+rng(iseed);
 e_init = randn(3,1);
 
 % tikhinov regularization parameter
@@ -219,10 +221,11 @@ fprintf('relative error in reconstruction %e\n',relerr_r)
 fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
-% 7 -- add proximal operator
+%% 7 -- add proximal operator
 
 % set a random initial guess (not generally a good idea)
-
+iseed = 8675309;
+rng(iseed);
 e_init = randn(3,1) + 1i*randn(3,1);
 
 % the below has the effect of constraining the alphas to the
@@ -248,7 +251,7 @@ fprintf('relative error w.r.t clean data %e\n',relerr_r_clean)
 fprintf('relative error of eigenvalues %e\n',relerr_e)
 
 
-% 8 -- show constrained vs regularized vs optimal
+%% 8 -- show constrained vs regularized vs optimal
 
 figure()
 set(groot, 'defaultLineMarkerSize',15)

@@ -159,6 +159,7 @@ if (imode == 2)
     % normalize
     
     b = sqrt(sum(abs(w).^2,1))';
+    b( abs(b) < 10*eps(1) ) = 1.0;
     w = w*diag(1./b);
     
     if (nargout > 3)
@@ -187,6 +188,7 @@ else
     % normalize
     
     b = sqrt(sum(abs(w).^2,1))';
+    b( abs(b) < 10*eps(1) ) = 1.0;    
     w = w*diag(1./b);
     
     if (nargout > 3)
