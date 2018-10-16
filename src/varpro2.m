@@ -308,42 +308,6 @@ for iter = 1:maxiter
   impr_rat = act_impr/pred_impr;
   
   if (err0 < errlast)
-
-				% old version
-    				% see if a smaller lambda is better
-
-    if (ifproxfun==1)
-    
-      lambda1 = lambda0/lamdown;
-      rjac(ia+1:2*ia,:) = lambda1*diag(scalespvt);
-      delta1 = rjac\rhs;
-      delta1 = delta1(ijpvt); % unscramble solution      
-
-      alpha1 = alpha + delta1;
-      if (ifproxfun== 1)
-        alpha1 = proxfun(alpha1);
-      end
-
-      phimat = phi(alpha1,t);
-      b1 = phimat\y;
-      res1 = y-phimat*b1;
-      err1 = 0.5*(norm(res1,'fro')^2+norm(gamma*alpha1)^2);
-      
-      if (err1 < err0)
-	lambda0 = lambda1;
-	alpha = alpha1;
-	errlast = err1;
-	b = b1;
-	res = res1;
-      else
-	alpha = alpha0;
-	errlast = err0;
-	b = b0;
-	res = res0;
-      end
-
-    else
-
 				% new version
 				% rescale lambda based on
 				% actual vs pred improvement
@@ -353,7 +317,6 @@ for iter = 1:maxiter
       errlast = err0;
       b = b0;
       res = res0;
-    end
     
   else
 	% if not, increase lambda until something works
@@ -370,6 +333,7 @@ for iter = 1:maxiter
       alpha0 = alpha + delta0;
       if (ifproxfun== 1)
         alpha0 = proxfun(alpha0);
+        delta0 = alpha0-alpha;
       end
 
 

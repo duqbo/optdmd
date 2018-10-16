@@ -159,12 +159,16 @@ if (imode == 2)
     % normalize
     
     b = sqrt(sum(abs(w).^2,1))';
-    b( abs(b) < 10*eps(1) ) = 1.0;
+    inds_small = abs(b) < 10*eps(1);
+    b( inds_small ) = 1.0;
     w = w*diag(1./b);
+    w(:,inds_small) = 0.0;
     
     if (nargout > 3)
         varargout{1} = w*diag(e)*pinv(w); % projected propagator
     end
+
+    b( inds_small ) = 0.0;
     
     % unproject dmd modes
     
@@ -188,13 +192,17 @@ else
     % normalize
     
     b = sqrt(sum(abs(w).^2,1))';
-    b( abs(b) < 10*eps(1) ) = 1.0;    
+    inds_small = abs(b) < 10*eps(1);
+    b( inds_small ) = 1.0;    
     w = w*diag(1./b);
+    w(:,inds_small) = 0.0;
     
     if (nargout > 3)
         wproj = u'*w;
         varargout{1} = wproj*diag(e)*pinv(wproj); %projected propagator
     end
+
+    b( inds_small ) = 0.0;
     
     
 end
