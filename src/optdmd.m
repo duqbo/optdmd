@@ -159,7 +159,7 @@ if (imode == 2)
     % normalize
     
     b = sqrt(sum(abs(w).^2,1))';
-    inds_small = abs(b) < 10*eps(1);
+    inds_small = abs(b) < 10*eps(1)*max(b);
     b( inds_small ) = 1.0;
     w = w*diag(1./b);
     w(:,inds_small) = 0.0;
@@ -192,7 +192,7 @@ else
     % normalize
     
     b = sqrt(sum(abs(w).^2,1))';
-    inds_small = abs(b) < 10*eps(1);
+    inds_small = abs(b) < 10*eps(1)*max(b);
     b( inds_small ) = 1.0;    
     w = w*diag(1./b);
     w(:,inds_small) = 0.0;
